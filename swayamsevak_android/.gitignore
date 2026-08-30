@@ -1,0 +1,42 @@
+# Build artifacts
+build/
+**/build/
+out/
+gen/
+.gradle/
+.kotlin/
+.artifacts/
+.externalNativeBuild/
+.cxx/
+
+# IDE settings
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Local configuration and secrets
+local.properties
+local.settings.json
+secrets.properties
+google-services.json
+GoogleService-Info.plist
+
+# Android output
+*.apk
+*.ap_
+*.dex
+captures/
+
+# Logs
+*.log
+
+# OS-specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
