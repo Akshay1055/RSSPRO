@@ -17,9 +17,8 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    // Replace with your PC's IP address (run 'ipconfig' in terminal)
-    // Example: "http://192.168.1.5:8080/"
-    private const val BASE_URL = "http://192.168.31.17:8080/"
+    // Public URL of the deployed Render backend. Keep the trailing slash.
+    private const val BASE_URL = "https://rsspro.onrender.com/"
 
     @Provides
     @Singleton
