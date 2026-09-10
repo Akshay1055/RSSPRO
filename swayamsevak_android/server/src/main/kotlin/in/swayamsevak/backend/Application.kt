@@ -60,6 +60,9 @@ data class OrganizationDto(
     val mohalla: String
 )
 
+private fun requireEnv(name: String): String =
+    System.getenv(name) ?: error("$name environment variable must be set")
+
 fun main() {
     val port = System.getenv("PORT")?.toInt() ?: 8080
     val server = embeddedServer(Netty, port = port, host = "0.0.0.0") {
@@ -67,10 +70,10 @@ fun main() {
         
         try {
             Database.connect(
-                url = "jdbc:postgresql://ep-muddy-base-azrews6i.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require",
+                url = requireEnv("DATABASE_URL"),
                 driver = "org.postgresql.Driver",
-                user = "neondb_owner",
-                password = "npg_1twK0RAYBVUx"
+                user = requireEnv("DATABASE_USER"),
+                password = requireEnv("DATABASE_PASSWORD")
             )
             println("Connected to Neon Database!")
             transaction {
