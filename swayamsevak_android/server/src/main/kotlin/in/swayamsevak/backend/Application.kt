@@ -102,6 +102,14 @@ fun Application.module() {
         get("/") {
             call.respondText("Swayamsevak Backend is running on Cloud DB!")
         }
+
+        get("/health") {
+            call.respond(mapOf("status" to "ok"))
+        }
+
+        get("/api/ping") {
+            call.respond(mapOf("message" to "RSSPRO backend is running"))
+        }
         
         route("/auth") {
             post("/login") {
