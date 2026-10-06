@@ -16,20 +16,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBalance
-import androidx.compose.material.icons.filled.AccountTree
-import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.FormatQuote
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.MenuBook
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.PersonAdd
-import androidx.compose.material.icons.filled.ArrowForward
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -51,6 +41,10 @@ import `in`.swayamsevak.app.ui.components.PrimaryButton
 import `in`.swayamsevak.app.ui.components.Saffron
 import `in`.swayamsevak.app.ui.components.SectionCard
 import `in`.swayamsevak.app.ui.components.Info
+import `in`.swayamsevak.app.ui.components.SurfaceDark
+import `in`.swayamsevak.app.ui.auth.AdminState
+import `in`.swayamsevak.app.ui.auth.AuthViewModel
+import `in`.swayamsevak.app.ui.auth.DirectoryState
 
 data class RssTopic(
     val title: String,
@@ -108,6 +102,9 @@ val rssTopics = listOf(
 @Composable
 fun RssIndex(
     onRegister: () -> Unit,
+    onDirectory: () -> Unit,
+    onMyShakha: () -> Unit,
+    onAdmin: () -> Unit,
     onHierarchy: () -> Unit,
     onTopic: (RssTopic) -> Unit
 ) {
@@ -133,6 +130,12 @@ fun RssIndex(
                     PrimaryButton("स्वयंसेवक पंजीयन", Icons.Default.PersonAdd, onRegister)
                 }
             }
+            Spacer(Modifier.height(14.dp))
+            Row(Modifier.fillMaxWidth()) {
+                HomeAction("सदस्य खोजें", Icons.Default.Search, Modifier.weight(1f), onDirectory)
+                HomeAction("मेरी शाखा", Icons.Default.Groups, Modifier.weight(1f), onMyShakha)
+            }
+            HomeAction("Admin प्रवेश", Icons.Default.AdminPanelSettings, Modifier.fillMaxWidth(), onAdmin)
             Spacer(Modifier.height(8.dp))
             Text("RSS को जानें", fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = Navy)
             Text("किसी भी विषय को चुनकर उसका संक्षिप्त परिचय पढ़ें।", color = Grey)
@@ -148,7 +151,7 @@ fun RssIndex(
         item {
             Card(
                 modifier = Modifier.fillMaxWidth().clickable(onClick = onHierarchy),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = CardDefaults.cardColors(containerColor = SurfaceDark, contentColor = Navy),
                 border = BorderStroke(1.dp, Border),
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)
             ) {
@@ -173,7 +176,7 @@ fun RssIndex(
 private fun TopicTile(topic: RssTopic, modifier: Modifier, onClick: () -> Unit) {
     Card(
         modifier = modifier.padding(5.dp).height(164.dp).clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = SurfaceDark, contentColor = Navy),
         border = BorderStroke(1.dp, Border),
         shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)
     ) {
@@ -246,7 +249,7 @@ fun RssHierarchyPage() {
         items(levels) { level ->
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = CardDefaults.cardColors(containerColor = SurfaceDark, contentColor = Navy),
                 border = BorderStroke(1.dp, Border),
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp)
             ) {
@@ -299,6 +302,186 @@ fun Poll() {
         SectionCard("शाखा समय संबंधी सुझाव", Icons.Default.FormatQuote) {
             Text("आपकी शाखा के लिए कौन सा समय उचित रहेगा?")
             Text(choice, color = Saffron, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+@Composable
+private fun HomeAction(title: String, icon: ImageVector, modifier: Modifier, onClick: () -> Unit) {
+    Card(
+        modifier = modifier.padding(5.dp).clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(containerColor = SurfaceDark, contentColor = Navy),
+        border = BorderStroke(1.dp, Border),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
+    ) {
+        Row(Modifier.padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, null, tint = Saffron, modifier = Modifier.size(22.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(title, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+        }
+    }
+}
+
+@Composable
+fun MemberSearchPage(viewModel: AuthViewModel) {
+    var query by remember { mutableStateOf("") }
+    val results by viewModel.memberResults.collectAsState()
+    val state by viewModel.directoryState.collectAsState()
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(18.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        item {
+            Text("नाम या शाखा से खोजें", fontSize = 22.sp, fontWeight = FontWeight.Black, color = Navy)
+            Spacer(Modifier.height(6.dp))
+            Text("कम-से-कम 2 अक्षर लिखें। परिणाम अधिकतम 50 तक सीमित हैं।", color = Grey)
+            Spacer(Modifier.height(16.dp))
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("नाम या शाखा") },
+                leadingIcon = { Icon(Icons.Default.Search, null) },
+                singleLine = true
+            )
+            Spacer(Modifier.height(10.dp))
+            PrimaryButton("खोजें", Icons.Default.Search) { viewModel.searchMembers(query) }
+        }
+        if (state is DirectoryState.Loading) {
+            item { CircularProgressIndicator(modifier = Modifier.padding(16.dp), color = Saffron) }
+        }
+        if (state is DirectoryState.Error) {
+            item { Text((state as DirectoryState.Error).message, color = Color(0xFFFCA5A5)) }
+        }
+        if (state is DirectoryState.Ready && results.isEmpty()) {
+            item { Text("कोई सदस्य नहीं मिला।", color = Grey) }
+        }
+        items(results) { member ->
+            Card(
+                colors = CardDefaults.cardColors(containerColor = SurfaceDark, contentColor = Navy),
+                border = BorderStroke(1.dp, Border)
+            ) {
+                Column(Modifier.padding(16.dp)) {
+                    Text(member.fullName, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
+                    Spacer(Modifier.height(4.dp))
+                    Text("शाखा: " + member.shakha, color = Grey)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MyShakhaPage() {
+    var activity by remember { mutableStateOf("मतदान") }
+    var title by remember { mutableStateOf("") }
+    var details by remember { mutableStateOf("") }
+    var posted by remember { mutableStateOf(false) }
+    val choices = listOf(
+        "मतदान" to Icons.Default.HowToVote,
+        "कार्यक्रम" to Icons.Default.Event,
+        "स्मरण" to Icons.Default.Notifications,
+        "रिपोर्ट" to Icons.Default.Assignment
+    )
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(18.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        item {
+            Text("विजय नगर शाखा", fontSize = 24.sp, fontWeight = FontWeight.Black, color = Navy)
+            Text("गतिविधि बनाएँ और अपनी शाखा से जुड़ें।", color = Grey)
+            Spacer(Modifier.height(14.dp))
+            SectionCard("नई गतिविधि", Icons.Default.Add) {
+                choices.chunked(2).forEach { row ->
+                    Row(Modifier.fillMaxWidth()) {
+                        row.forEach { choice ->
+                            FilterChip(
+                                selected = activity == choice.first,
+                                onClick = { activity = choice.first },
+                                label = { Text(choice.first) },
+                                leadingIcon = { Icon(choice.second, null, modifier = Modifier.size(18.dp)) },
+                                modifier = Modifier.weight(1f).padding(3.dp)
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
+                OutlinedTextField(title, { title = it }, Modifier.fillMaxWidth(), label = { Text("शीर्षक") })
+                Spacer(Modifier.height(10.dp))
+                OutlinedTextField(
+                    details,
+                    { details = it },
+                    Modifier.fillMaxWidth().height(110.dp),
+                    label = { Text("विवरण, समय या प्रश्न") }
+                )
+                Spacer(Modifier.height(12.dp))
+                PrimaryButton("गतिविधि तैयार करें", Icons.Default.Publish) {
+                    posted = title.isNotBlank()
+                }
+                if (posted) {
+                    Text("यह " + activity + " तैयार है। इसे सभी को भेजने के लिए अगला सर्वर चरण जोड़ा जाएगा।", color = Green, modifier = Modifier.padding(top = 10.dp))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AdminLoginPage(viewModel: AuthViewModel, onAuthenticated: () -> Unit) {
+    var username by remember { mutableStateOf("") }
+    var pin by remember { mutableStateOf("") }
+    val state by viewModel.adminState.collectAsState()
+
+    LaunchedEffect(state) {
+        if (state is AdminState.Authenticated) onAuthenticated()
+    }
+
+    Column(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.Center) {
+        Icon(Icons.Default.AdminPanelSettings, null, tint = Saffron, modifier = Modifier.size(48.dp))
+        Spacer(Modifier.height(14.dp))
+        Text("Admin प्रवेश", fontSize = 25.sp, fontWeight = FontWeight.Black, color = Navy)
+        Text("अपना उपयोगकर्ता नाम और सुरक्षित PIN दर्ज करें।", color = Grey)
+        Spacer(Modifier.height(20.dp))
+        OutlinedTextField(username, { username = it }, Modifier.fillMaxWidth(), label = { Text("उपयोगकर्ता नाम") }, singleLine = true)
+        Spacer(Modifier.height(10.dp))
+        OutlinedTextField(pin, { pin = it }, Modifier.fillMaxWidth(), label = { Text("PIN / पासवर्ड") }, singleLine = true)
+        Spacer(Modifier.height(14.dp))
+        if (state is AdminState.Error) Text((state as AdminState.Error).message, color = Color(0xFFFCA5A5))
+        if (state is AdminState.Loading) CircularProgressIndicator(color = Saffron)
+        else PrimaryButton("प्रवेश करें", Icons.Default.LockOpen) { viewModel.adminLogin(username, pin) }
+    }
+}
+
+@Composable
+fun AdminConsolePage() {
+    val tools = listOf(
+        "मतदान बनाएँ" to Icons.Default.HowToVote,
+        "कार्यक्रम पोस्ट करें" to Icons.Default.Event,
+        "स्मरण भेजें" to Icons.Default.Notifications,
+        "शाखा रिपोर्ट बनाएँ" to Icons.Default.Assignment
+    )
+
+    LazyColumn(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        item {
+            Text("शाखा प्रबंधन", fontSize = 24.sp, fontWeight = FontWeight.Black, color = Navy)
+            Text("अपनी शाखा के लिए गतिविधियाँ प्रबंधित करें।", color = Grey)
+        }
+        items(tools) { tool ->
+            Card(
+                colors = CardDefaults.cardColors(containerColor = SurfaceDark, contentColor = Navy),
+                border = BorderStroke(1.dp, Border)
+            ) {
+                Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(tool.second, null, tint = Saffron)
+                    Spacer(Modifier.width(14.dp))
+                    Text(tool.first, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                    Icon(Icons.Default.ArrowForward, null, tint = Saffron)
+                }
+            }
         }
     }
 }
