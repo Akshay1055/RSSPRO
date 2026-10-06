@@ -273,7 +273,7 @@ fun Success(viewModel: AuthViewModel, done: () -> Unit) {
         Text("आपका पंजीयन क्रमांक", color = Grey)
         Text(regId, fontSize = 28.sp, fontWeight = FontWeight.Black, color = Navy)
         Spacer(Modifier.height(12.dp))
-        Text("आपकी जानकारी सत्यापन के लिए भेजी गई है।", textAlign = TextAlign.Center)
+        Text("आपका पंजीयन सुरक्षित है। आप अब RSS सामग्री और संगठन संरचना देख सकते हैं।", textAlign = TextAlign.Center)
         Spacer(Modifier.weight(1f))
         PrimaryButton("होम पर जाएँ", Icons.Default.Home) {
             viewModel.resetState()
