@@ -13,6 +13,7 @@ import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.SchemaUtils
+import org.mindrot.jbcrypt.BCrypt
 import java.util.*
 
 // Database Tables
@@ -34,6 +35,13 @@ object Organizations : Table("organizations") {
     val basti = text("basti").nullable()
     val branch = text("branch").nullable()
     val mohalla = text("mohalla").nullable()
+    override val primaryKey = PrimaryKey(id)
+}
+
+object AdminUsers : Table("admin_users") {
+    val id = integer("id").autoIncrement()
+    val username = text("username").uniqueIndex()
+    val pinHash = text("pin_hash")
     override val primaryKey = PrimaryKey(id)
 }
 
@@ -60,6 +68,19 @@ data class OrganizationDto(
     val mohalla: String
 )
 
+@Serializable
+data class MemberSummary(
+    val id: String,
+    val fullName: String,
+    val shakha: String
+)
+
+@Serializable
+data class AdminLoginRequest(val username: String, val pin: String)
+
+@Serializable
+data class AdminLoginResponse(val success: Boolean)
+
 private fun requireEnv(name: String): String =
     System.getenv(name) ?: error("$name environment variable must be set")
 
@@ -77,7 +98,8 @@ fun main() {
             )
             println("Connected to Neon Database!")
             transaction {
-                SchemaUtils.create(Users, Organizations)
+                SchemaUtils.create(Users, Organizations, AdminUsers)
+                seedAdminFromEnvironment()
             }
             println("Database schema initialized!")
         } catch (e: Exception) {
@@ -87,6 +109,24 @@ fun main() {
         module()
     }
     server.start(wait = true)
+}
+
+private fun seedAdminFromEnvironment() {
+    val username = System.getenv("ADMIN_USERNAME")?.trim()
+    val pin = System.getenv("ADMIN_PIN")
+    if (username.isNullOrBlank() || pin.isNullOrBlank()) return
+
+    val alreadyExists = AdminUsers.selectAll()
+        .where { AdminUsers.username eq username }
+        .count() > 0
+
+    if (!alreadyExists) {
+        AdminUsers.insert {
+            it[AdminUsers.username] = username
+            it[pinHash] = BCrypt.hashpw(pin, BCrypt.gensalt())
+        }
+        println("Admin user initialized from environment settings.")
+    }
 }
 
 fun Application.module() {
@@ -111,6 +151,48 @@ fun Application.module() {
             call.respond(mapOf("message" to "RSSPRO backend is running"))
         }
         
+        get("/members") {
+            val query = call.request.queryParameters["query"]?.trim().orEmpty()
+            if (query.length < 2) {
+                call.respond(emptyList<MemberSummary>())
+                return@get
+            }
+
+            val pattern = "%" + query + "%"
+            val members = transaction {
+                (Users innerJoin Organizations)
+                    .selectAll()
+                    .where {
+                        (Users.fullName like pattern) or
+                            (Organizations.branch like pattern)
+                    }
+                    .limit(50)
+                    .map {
+                        MemberSummary(
+                            id = it[Users.id].toString(),
+                            fullName = it[Users.fullName],
+                            shakha = it[Organizations.branch] ?: ""
+                        )
+                    }
+            }
+            call.respond(members)
+        }
+
+        post("/admin/login") {
+            val request = call.receive<AdminLoginRequest>()
+            val admin = transaction {
+                AdminUsers.selectAll()
+                    .where { AdminUsers.username eq request.username.trim() }
+                    .singleOrNull()
+            }
+
+            if (admin != null && BCrypt.checkpw(request.pin, admin[AdminUsers.pinHash])) {
+                call.respond(AdminLoginResponse(success = true))
+            } else {
+                call.respond(io.ktor.http.HttpStatusCode.Unauthorized, AdminLoginResponse(success = false))
+            }
+        }
+
         route("/auth") {
             post("/login") {
                 val req = call.receive<LoginRequest>()
