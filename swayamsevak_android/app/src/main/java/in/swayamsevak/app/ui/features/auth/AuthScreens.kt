@@ -66,7 +66,7 @@ fun Mobile(viewModel: AuthViewModel, go: (Screen) -> Unit) {
         Spacer(Modifier.height(24.dp))
         OutlinedTextField(
             phone,
-            { viewModel.phone.value = it.filter(Char::isDigit) },
+            { viewModel.phone.value = it.filter { character -> character.isDigit() } },
             Modifier.fillMaxWidth(),
             label = { Text("मोबाइल नंबर") },
             prefix = { Text("+91  ") },
