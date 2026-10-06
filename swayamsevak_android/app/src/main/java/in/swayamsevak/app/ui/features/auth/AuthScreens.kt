@@ -55,42 +55,31 @@ fun Welcome(onRegister: () -> Unit, onAdmin: () -> Unit, onDeveloper: () -> Unit
 @Composable
 fun Mobile(viewModel: AuthViewModel, go: (Screen) -> Unit) {
     val phone by viewModel.phone.collectAsState()
-    val uiState by viewModel.uiState.collectAsState()
-    var otpSent by remember { mutableStateOf(false) }
-    var otp by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf<String?>(null) }
 
     Column(Modifier.fillMaxSize().padding(18.dp)) {
-        Text("स्वयंसेवक पंजीयन", fontSize = 25.sp, fontWeight = FontWeight.Black)
+        Step(1, 4)
+        Spacer(Modifier.height(18.dp))
+        Text("मोबाइल नंबर", fontSize = 25.sp, fontWeight = FontWeight.Black)
         Spacer(Modifier.height(8.dp))
-        Text("पहले अपना मोबाइल नंबर सत्यापित करें।")
+        Text("आपका मोबाइल नंबर आपकी विशिष्ट पहचान के रूप में उपयोग होगा। OTP सत्यापन की आवश्यकता नहीं है।")
         Spacer(Modifier.height(24.dp))
-        OutlinedTextField(phone, { viewModel.phone.value = it }, Modifier.fillMaxWidth(), label = { Text("मोबाइल नंबर") }, prefix = { Text("+91  ") })
-        
-        if (otpSent) {
-            Spacer(Modifier.height(12.dp))
-            OutlinedTextField(otp, { otp = it }, Modifier.fillMaxWidth(), label = { Text("OTP") })
-        }
-
-        if (uiState is AuthUiState.Error) {
-            Text((uiState as AuthUiState.Error).message, color = Color.Red, modifier = Modifier.padding(top = 8.dp))
-        }
-
+        OutlinedTextField(
+            phone,
+            { viewModel.phone.value = it.filter(Char::isDigit) },
+            Modifier.fillMaxWidth(),
+            label = { Text("मोबाइल नंबर") },
+            prefix = { Text("+91  ") },
+            singleLine = true
+        )
+        error?.let { Text(it, color = Color.Red, modifier = Modifier.padding(top = 8.dp)) }
         Spacer(Modifier.weight(1f))
-        
-        if (uiState is AuthUiState.Loading) {
-            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-        } else {
-            PrimaryButton(
-                if (otpSent) "OTP सत्यापित करें" else "OTP भेजें",
-                if (otpSent) Icons.Default.CheckCircle else Icons.Default.Sms
-            ) {
-                if (!otpSent) {
-                    otpSent = true
-                } else {
-                    go(Screen.Personal)
-                }
+        PrimaryButton("आगे बढ़ें", Icons.Default.ArrowForward) {
+            if (phone.length < 10) {
+                error = "कृपया 10 अंकों का मोबाइल नंबर लिखें।"
+            } else {
+                error = null
+                go(Screen.Personal)
             }
         }
     }
@@ -103,7 +92,7 @@ fun Personal(viewModel: AuthViewModel, go: (Screen) -> Unit) {
     val dob by viewModel.dob.collectAsState()
 
     Column(Modifier.fillMaxSize().padding(18.dp)) {
-        Step(2, 5)
+        Step(2, 4)
         Spacer(Modifier.height(18.dp))
         OutlinedTextField(name, { viewModel.name.value = it }, Modifier.fillMaxWidth(), label = { Text("नाम") })
         Spacer(Modifier.height(12.dp))
@@ -149,7 +138,7 @@ fun Organization(viewModel: AuthViewModel, go: (Screen) -> Unit) {
     )
 
     LazyColumn(Modifier.fillMaxSize().padding(18.dp)) {
-        item { Step(3, 5); Spacer(Modifier.height(18.dp)) }
+        item { Step(3, 4); Spacer(Modifier.height(18.dp)) }
         items(options.indices.toList()) { i ->
             Dropdown(options[i].first, values[i], options[i].second, setters[i])
             Spacer(Modifier.height(12.dp))
@@ -182,7 +171,7 @@ fun Interest(viewModel: AuthViewModel, go: (Screen) -> Unit) {
     val selected = viewModel.interests
 
     Column(Modifier.fillMaxSize().padding(18.dp)) {
-        Step(4, 5)
+        Step(4, 4)
         Spacer(Modifier.height(16.dp))
         Text("अपनी रुचि चुनें", fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
         LazyColumn(Modifier.weight(1f)) {
