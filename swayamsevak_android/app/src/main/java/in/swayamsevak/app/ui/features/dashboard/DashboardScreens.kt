@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import `in`.swayamsevak.app.ui.components.Border
 import `in`.swayamsevak.app.ui.components.Cream
 import `in`.swayamsevak.app.ui.components.Grey
+import `in`.swayamsevak.app.ui.components.Green
 import `in`.swayamsevak.app.ui.components.Navy
 import `in`.swayamsevak.app.ui.components.PrimaryButton
 import `in`.swayamsevak.app.ui.components.Saffron
