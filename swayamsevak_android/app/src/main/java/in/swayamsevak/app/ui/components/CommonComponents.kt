@@ -1,6 +1,5 @@
 package `in`.swayamsevak.app.ui.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -16,20 +15,27 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-val Saffron = Color(0xFFF57C00)
-val SaffronDark = Color(0xFFE65100)
-val Cream = Color(0xFFFFF8F1)
-val Navy = Color(0xFF172B4D)
-val Grey = Color(0xFF667085)
-val Border = Color(0xFFE4E7EC)
-val Green = Color(0xFF2E7D32)
+val Saffron = Color(0xFFFF8A1F)
+val SaffronDark = Color(0xFFC45A00)
+val Cream = Color(0xFF0B1220)
+val SurfaceDark = Color(0xFF162033)
+val Navy = Color(0xFFF8FAFC)
+val Grey = Color(0xFFB4C0D0)
+val Border = Color(0xFF334155)
+val Green = Color(0xFF4ADE80)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppScaffold(title: String, back: Boolean, onBack: () -> Unit, content: @Composable () -> Unit) {
     Scaffold(
+        containerColor = Cream,
         topBar = {
             TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = SurfaceDark,
+                    titleContentColor = Navy,
+                    navigationIconContentColor = Navy
+                ),
                 title = { Text(title, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     if (back) IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null) }
@@ -44,7 +50,7 @@ fun PrimaryButton(text: String, icon: ImageVector = Icons.Default.ArrowForward, 
     Button(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
-        colors = ButtonDefaults.buttonColors(containerColor = Saffron),
+        colors = ButtonDefaults.buttonColors(containerColor = Saffron, contentColor = Color.White),
         shape = RoundedCornerShape(12.dp),
         contentPadding = PaddingValues(vertical = 14.dp)
     ) {
@@ -58,7 +64,7 @@ fun PrimaryButton(text: String, icon: ImageVector = Icons.Default.ArrowForward, 
 fun SectionCard(title: String, icon: ImageVector? = null, content: @Composable ColumnScope.() -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth().padding(bottom = 14.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = SurfaceDark, contentColor = Navy),
         border = androidx.compose.foundation.BorderStroke(1.dp, Border),
         shape = RoundedCornerShape(16.dp)
     ) {
