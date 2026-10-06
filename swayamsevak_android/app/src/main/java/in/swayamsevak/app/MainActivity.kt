@@ -74,9 +74,7 @@ fun SwayamsevakApp() {
                         go(Screen.Library)
                     }
                 )
-                Screen.Library -> AppScaffold(selectedTopic?.title ?: "RSS") {
-                    back()
-                } {
+                Screen.Library -> AppScaffold(selectedTopic?.title ?: "RSS", true, { back() }) {
                     RssTopicPage(selectedTopic ?: rssTopics.first())
                 }
                 Screen.Hierarchy -> AppScaffold("RSS संगठन संरचना", true, { back() }) {
