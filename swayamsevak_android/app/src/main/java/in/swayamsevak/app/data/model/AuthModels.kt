@@ -45,3 +45,21 @@ data class OrganizationDto(
     val branch: String,
     val mohalla: String
 )
+
+@Serializable
+data class MemberSummary(
+    val id: String,
+    val fullName: String,
+    val shakha: String
+)
+
+@Serializable
+data class AdminLoginRequest(
+    val username: String,
+    val pin: String
+)
+
+@Serializable
+data class AdminLoginResponse(
+    val success: Boolean
+)
