@@ -3,9 +3,15 @@ package `in`.swayamsevak.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -14,14 +20,13 @@ import `in`.swayamsevak.app.ui.components.AppScaffold
 import `in`.swayamsevak.app.ui.components.Cream
 import `in`.swayamsevak.app.ui.components.Saffron
 import `in`.swayamsevak.app.ui.components.SaffronDark
-import `in`.swayamsevak.app.ui.features.admin.*
 import `in`.swayamsevak.app.ui.features.auth.*
 import `in`.swayamsevak.app.ui.features.dashboard.*
 
 enum class Screen {
-    Welcome, Mobile, Personal, Organization, Interest, Review, Success,
-    Dashboard, Profile, Attendance, Poll,
-    Admin, Registrations, OrganizationAdmin, Developer, Permissions
+    Index, Library, Hierarchy,
+    Mobile, Personal, Organization, Interest, Review, Success,
+    Profile, Attendance, Poll
 }
 
 @AndroidEntryPoint
@@ -35,7 +40,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun SwayamsevakApp() {
     val authViewModel: AuthViewModel = viewModel()
-    
+
     MaterialTheme(
         colorScheme = lightColorScheme(
             primary = Saffron,
@@ -44,8 +49,9 @@ fun SwayamsevakApp() {
             surface = androidx.compose.ui.graphics.Color.White
         )
     ) {
-        var screen by remember { mutableStateOf(Screen.Welcome) }
+        var screen by remember { mutableStateOf(Screen.Index) }
         var backStack by remember { mutableStateOf(listOf<Screen>()) }
+        var selectedTopic by remember { mutableStateOf<RssTopic?>(null) }
 
         val go = { next: Screen ->
             backStack = backStack + screen
@@ -60,26 +66,36 @@ fun SwayamsevakApp() {
 
         Surface(modifier = Modifier.fillMaxSize(), color = Cream) {
             when (screen) {
-                Screen.Welcome -> Welcome(
+                Screen.Index -> RssIndex(
                     onRegister = { go(Screen.Mobile) },
-                    onAdmin = { go(Screen.Admin) },
-                    onDeveloper = { go(Screen.Developer) }
+                    onHierarchy = { go(Screen.Hierarchy) },
+                    onTopic = { topic ->
+                        selectedTopic = topic
+                        go(Screen.Library)
+                    }
                 )
-                Screen.Mobile -> AppScaffold("मोबाइल सत्यापन", true, { back() }) { Mobile(authViewModel, go) }
+                Screen.Library -> AppScaffold(selectedTopic?.title ?: "RSS") {
+                    back()
+                } {
+                    RssTopicPage(selectedTopic ?: rssTopics.first())
+                }
+                Screen.Hierarchy -> AppScaffold("RSS संगठन संरचना", true, { back() }) {
+                    RssHierarchyPage()
+                }
+                Screen.Mobile -> AppScaffold("स्वयंसेवक पंजीयन", true, { back() }) { Mobile(authViewModel, go) }
                 Screen.Personal -> AppScaffold("व्यक्तिगत जानकारी", true, { back() }) { Personal(authViewModel, go) }
                 Screen.Organization -> AppScaffold("संगठन जानकारी", true, { back() }) { Organization(authViewModel, go) }
                 Screen.Interest -> AppScaffold("रुचि / कार्यक्षेत्र", true, { back() }) { Interest(authViewModel, go) }
                 Screen.Review -> AppScaffold("पंजीयन समीक्षा", true, { back() }) { Review(authViewModel, go) }
-                Screen.Success -> AppScaffold("पंजीयन सफल", false, {}) { Success(authViewModel) { screen = Screen.Dashboard; backStack = emptyList() } }
-                Screen.Dashboard -> Dashboard(go)
+                Screen.Success -> AppScaffold("पंजीयन सफल", false, {}) {
+                    Success(authViewModel) {
+                        screen = Screen.Index
+                        backStack = emptyList()
+                    }
+                }
                 Screen.Profile -> AppScaffold("मेरा प्रोफ़ाइल", true, { back() }) { Profile() }
                 Screen.Attendance -> AppScaffold("आज की उपस्थिति", true, { back() }) { Attendance() }
                 Screen.Poll -> AppScaffold("मतदान / सुझाव", true, { back() }) { Poll() }
-                Screen.Admin -> AppScaffold("प्रशासन", true, { back() }) { Admin(go) }
-                Screen.Registrations -> AppScaffold("पंजीयन प्रबंधन", true, { back() }) { Registrations(go) }
-                Screen.OrganizationAdmin -> AppScaffold("संगठन प्रबंधन", true, { back() }) { OrganizationAdmin() }
-                Screen.Developer -> AppScaffold("फ़ील्ड प्रबंधन", true, { back() }) { Developer(go) }
-                Screen.Permissions -> AppScaffold("भूमिका एवं अधिकार", true, { back() }) { Permissions() }
             }
         }
     }
