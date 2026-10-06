@@ -6,7 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.lightColorScheme
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -20,11 +20,12 @@ import `in`.swayamsevak.app.ui.components.AppScaffold
 import `in`.swayamsevak.app.ui.components.Cream
 import `in`.swayamsevak.app.ui.components.Saffron
 import `in`.swayamsevak.app.ui.components.SaffronDark
+import `in`.swayamsevak.app.ui.components.SurfaceDark
 import `in`.swayamsevak.app.ui.features.auth.*
 import `in`.swayamsevak.app.ui.features.dashboard.*
 
 enum class Screen {
-    Index, Library, Hierarchy,
+    Index, Library, Hierarchy, Directory, MyShakha, AdminLogin, AdminConsole,
     Mobile, Personal, Organization, Interest, Review, Success,
     Profile, Attendance, Poll
 }
@@ -42,11 +43,11 @@ fun SwayamsevakApp() {
     val authViewModel: AuthViewModel = viewModel()
 
     MaterialTheme(
-        colorScheme = lightColorScheme(
+        colorScheme = darkColorScheme(
             primary = Saffron,
             secondary = SaffronDark,
             background = Cream,
-            surface = androidx.compose.ui.graphics.Color.White
+            surface = SurfaceDark
         )
     ) {
         var screen by remember { mutableStateOf(Screen.Index) }
@@ -68,6 +69,9 @@ fun SwayamsevakApp() {
             when (screen) {
                 Screen.Index -> RssIndex(
                     onRegister = { go(Screen.Mobile) },
+                    onDirectory = { go(Screen.Directory) },
+                    onMyShakha = { go(Screen.MyShakha) },
+                    onAdmin = { authViewModel.resetAdminState(); go(Screen.AdminLogin) },
                     onHierarchy = { go(Screen.Hierarchy) },
                     onTopic = { topic ->
                         selectedTopic = topic
@@ -79,6 +83,18 @@ fun SwayamsevakApp() {
                 }
                 Screen.Hierarchy -> AppScaffold("RSS संगठन संरचना", true, { back() }) {
                     RssHierarchyPage()
+                }
+                Screen.Directory -> AppScaffold("सदस्य खोजें", true, { back() }) {
+                    MemberSearchPage(authViewModel)
+                }
+                Screen.MyShakha -> AppScaffold("मेरी शाखा", true, { back() }) {
+                    MyShakhaPage()
+                }
+                Screen.AdminLogin -> AppScaffold("Admin प्रवेश", true, { back() }) {
+                    AdminLoginPage(authViewModel) { go(Screen.AdminConsole) }
+                }
+                Screen.AdminConsole -> AppScaffold("शाखा प्रबंधन", true, { back() }) {
+                    AdminConsolePage()
                 }
                 Screen.Mobile -> AppScaffold("स्वयंसेवक पंजीयन", true, { back() }) { Mobile(authViewModel, go) }
                 Screen.Personal -> AppScaffold("व्यक्तिगत जानकारी", true, { back() }) { Personal(authViewModel, go) }
