@@ -88,11 +88,19 @@ fun Mobile(viewModel: AuthViewModel, go: (Screen) -> Unit) {
 @Composable
 fun Personal(viewModel: AuthViewModel, go: (Screen) -> Unit) {
     val name by viewModel.name.collectAsState()
+    val email by viewModel.email.collectAsState()
+    val pin by viewModel.pin.collectAsState()
     val fatherName by viewModel.fatherName.collectAsState()
     val dob by viewModel.dob.collectAsState()
 
     Column(Modifier.fillMaxSize().padding(18.dp)) {
         Step(2, 4)
+        Spacer(Modifier.height(18.dp))
+        Text("प्रोफ़ाइल प्रवेश", fontSize = 19.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(8.dp))
+        OutlinedTextField(email, { viewModel.email.value = it.trim() }, Modifier.fillMaxWidth(), label = { Text("ईमेल") }, singleLine = true)
+        Spacer(Modifier.height(12.dp))
+        OutlinedTextField(pin, { viewModel.pin.value = it }, Modifier.fillMaxWidth(), label = { Text("अपना PIN बनाएँ (कम से कम 4 अंक)") }, singleLine = true)
         Spacer(Modifier.height(18.dp))
         OutlinedTextField(name, { viewModel.name.value = it }, Modifier.fillMaxWidth(), label = { Text("नाम") })
         Spacer(Modifier.height(12.dp))
