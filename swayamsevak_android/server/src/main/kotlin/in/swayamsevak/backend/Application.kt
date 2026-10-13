@@ -225,12 +225,12 @@ fun Application.module() {
             transaction {
                 ShakhaActivities.insert {
                     it[ShakhaActivities.id] = id
-                    it[shakha] = creator[Organizations.branch] ?: ""
-                    it[type] = request.type
-                    it[title] = request.title.trim()
-                    it[details] = request.details.trim()
-                    it[createdBy] = creator[Users.id]
-                    it[createdAt] = now()
+                    it[ShakhaActivities.shakha] = creator[Organizations.branch] ?: ""
+                    it[ShakhaActivities.type] = request.type
+                    it[ShakhaActivities.title] = request.title.trim()
+                    it[ShakhaActivities.details] = request.details.trim()
+                    it[ShakhaActivities.createdBy] = creator[Users.id]
+                    it[ShakhaActivities.createdAt] = now()
                 }
             }
             call.respond(SimpleResponse(true, id.toString()))
