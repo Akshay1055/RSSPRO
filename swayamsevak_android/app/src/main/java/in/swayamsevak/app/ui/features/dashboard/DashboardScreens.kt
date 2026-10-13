@@ -44,6 +44,8 @@ import `in`.swayamsevak.app.ui.components.SectionCard
 import `in`.swayamsevak.app.ui.components.Info
 import `in`.swayamsevak.app.ui.components.SurfaceDark
 import `in`.swayamsevak.app.ui.auth.AdminState
+import `in`.swayamsevak.app.ui.auth.AccountState
+import `in`.swayamsevak.app.ui.auth.ActivityState
 import `in`.swayamsevak.app.ui.auth.AuthViewModel
 import `in`.swayamsevak.app.ui.auth.DirectoryState
 
@@ -103,6 +105,7 @@ val rssTopics = listOf(
 @Composable
 fun RssIndex(
     onRegister: () -> Unit,
+    onProfile: () -> Unit,
     onDirectory: () -> Unit,
     onMyShakha: () -> Unit,
     onAdmin: () -> Unit,
@@ -136,6 +139,7 @@ fun RssIndex(
                 HomeAction("सदस्य खोजें", Icons.Default.Search, Modifier.weight(1f), onDirectory)
                 HomeAction("मेरी शाखा", Icons.Default.Groups, Modifier.weight(1f), onMyShakha)
             }
+            HomeAction("मेरा प्रोफ़ाइल", Icons.Default.Person, Modifier.fillMaxWidth(), onProfile)
             HomeAction("Admin प्रवेश", Icons.Default.AdminPanelSettings, Modifier.fillMaxWidth(), onAdmin)
             Spacer(Modifier.height(8.dp))
             Text("RSS को जानें", fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = Navy)
@@ -375,11 +379,11 @@ fun MemberSearchPage(viewModel: AuthViewModel) {
 }
 
 @Composable
-fun MyShakhaPage() {
+fun MyShakhaPage(viewModel: AuthViewModel) {
     var activity by remember { mutableStateOf("मतदान") }
     var title by remember { mutableStateOf("") }
     var details by remember { mutableStateOf("") }
-    var posted by remember { mutableStateOf(false) }
+    val publishState by viewModel.activityState.collectAsState()
     val choices = listOf(
         "मतदान" to Icons.Default.HowToVote,
         "कार्यक्रम" to Icons.Default.Event,
@@ -420,12 +424,12 @@ fun MyShakhaPage() {
                     label = { Text("विवरण, समय या प्रश्न") }
                 )
                 Spacer(Modifier.height(12.dp))
-                PrimaryButton("गतिविधि तैयार करें", Icons.Default.Publish) {
-                    posted = title.isNotBlank()
+                PrimaryButton("गतिविधि प्रकाशित करें", Icons.Default.Publish) {
+                    viewModel.createActivity(activity, title, details)
                 }
-                if (posted) {
-                    Text("यह " + activity + " तैयार है। इसे सभी को भेजने के लिए अगला सर्वर चरण जोड़ा जाएगा।", color = Green, modifier = Modifier.padding(top = 10.dp))
-                }
+                if (publishState is ActivityState.Loading) CircularProgressIndicator(color = Saffron, modifier = Modifier.padding(top = 10.dp))
+                if (publishState is ActivityState.Message) Text((publishState as ActivityState.Message).message, color = Green, modifier = Modifier.padding(top = 10.dp))
+                if (publishState is ActivityState.Error) Text((publishState as ActivityState.Error).message, color = Color(0xFFFCA5A5), modifier = Modifier.padding(top = 10.dp))
             }
         }
     }
@@ -482,6 +486,72 @@ fun AdminConsolePage() {
                     Text(tool.first, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                     Icon(Icons.Default.ArrowForward, null, tint = Saffron)
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun ProfileAccessPage(viewModel: AuthViewModel, onAuthenticated: () -> Unit) {
+    var email by remember { mutableStateOf("") }
+    var pin by remember { mutableStateOf("") }
+    var code by remember { mutableStateOf("") }
+    var newPin by remember { mutableStateOf("") }
+    var resetMode by remember { mutableStateOf(false) }
+    val state by viewModel.accountState.collectAsState()
+
+    LaunchedEffect(state) {
+        if (state is AccountState.Authenticated) onAuthenticated()
+    }
+
+    LazyColumn(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        item {
+            Text(if (resetMode) "PIN रीसेट करें" else "अपने प्रोफ़ाइल में प्रवेश करें", fontSize = 23.sp, fontWeight = FontWeight.Black, color = Navy)
+            Text(if (resetMode) "ईमेल पर भेजे गए 6-अंकीय कोड से नया PIN बनाएँ।" else "पंजीकरण के समय दर्ज ईमेल और PIN का उपयोग करें।", color = Grey)
+            Spacer(Modifier.height(16.dp))
+            OutlinedTextField(email, { email = it.trim() }, Modifier.fillMaxWidth(), label = { Text("ईमेल") }, singleLine = true)
+            if (resetMode) {
+                Spacer(Modifier.height(10.dp))
+                OutlinedTextField(code, { code = it }, Modifier.fillMaxWidth(), label = { Text("रीसेट कोड") }, singleLine = true)
+                Spacer(Modifier.height(10.dp))
+                OutlinedTextField(newPin, { newPin = it }, Modifier.fillMaxWidth(), label = { Text("नया PIN") }, singleLine = true)
+                Spacer(Modifier.height(12.dp))
+                PrimaryButton("नया PIN सुरक्षित करें", Icons.Default.LockReset) { viewModel.resetPin(email, code, newPin) }
+                TextButton(onClick = { viewModel.sendForgotPin(email) }) { Text("कोड फिर से भेजें") }
+            } else {
+                Spacer(Modifier.height(10.dp))
+                OutlinedTextField(pin, { pin = it }, Modifier.fillMaxWidth(), label = { Text("PIN") }, singleLine = true)
+                Spacer(Modifier.height(12.dp))
+                PrimaryButton("प्रोफ़ाइल खोलें", Icons.Default.Login) { viewModel.profileLogin(email, pin) }
+                TextButton(onClick = { resetMode = true }) { Text("PIN भूल गए? ईमेल से रीसेट करें") }
+            }
+            if (state is AccountState.Loading) CircularProgressIndicator(color = Saffron)
+            if (state is AccountState.Message) Text((state as AccountState.Message).message, color = Green)
+            if (state is AccountState.Error) Text((state as AccountState.Error).message, color = Color(0xFFFCA5A5))
+        }
+    }
+}
+
+@Composable
+fun MemberProfilePage(viewModel: AuthViewModel) {
+    val profile by viewModel.profile.collectAsState()
+    if (profile == null) {
+        Column(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.Center) {
+            Text("कोई प्रोफ़ाइल खुली नहीं है।", color = Grey)
+        }
+        return
+    }
+    LazyColumn(Modifier.fillMaxSize().padding(18.dp)) {
+        item {
+            SectionCard("मेरी प्रोफ़ाइल", Icons.Default.Person) {
+                Info("नाम", profile!!.fullName)
+                Info("मोबाइल", profile!!.phoneNumber)
+                Info("ईमेल", profile!!.email)
+                Info("शाखा", profile!!.shakha)
+                Info("भूमिका", profile!!.role)
+            }
+            SectionCard("अगला कदम", Icons.Default.Groups) {
+                Text("मेरी शाखा से कार्यक्रम, मतदान, स्मरण और रिपोर्ट देखें या बनाएँ।", color = Grey)
             }
         }
     }
