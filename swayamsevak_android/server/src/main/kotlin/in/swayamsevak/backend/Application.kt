@@ -150,7 +150,7 @@ private fun seedAdminFromEnvironment() {
     val username = System.getenv("ADMIN_USERNAME")?.trim()
     val pin = System.getenv("ADMIN_PIN")
     if (username.isNullOrBlank() || pin.isNullOrBlank()) return
-    if (AdminUsers.selectAll().where { AdminUsers.username eq username }.empty()) {
+    if (AdminUsers.selectAll().where { AdminUsers.username eq username }.count() == 0) {
         AdminUsers.insert {
             it[AdminUsers.username] = username
             it[pinHash] = BCrypt.hashpw(pin, BCrypt.gensalt())
