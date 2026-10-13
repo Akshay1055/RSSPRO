@@ -2,6 +2,7 @@ package `in`.swayamsevak.app
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -25,7 +26,7 @@ import `in`.swayamsevak.app.ui.features.auth.*
 import `in`.swayamsevak.app.ui.features.dashboard.*
 
 enum class Screen {
-    Index, Library, Hierarchy, Directory, MyShakha, AdminLogin, AdminConsole,
+    Index, Library, Hierarchy, Directory, MyShakha, ProfileAccess, AdminLogin, AdminConsole,
     Mobile, Personal, Organization, Interest, Review, Success,
     Profile, Attendance, Poll
 }
@@ -65,10 +66,18 @@ fun SwayamsevakApp() {
             }
         }
 
+        BackHandler {
+            if (backStack.isNotEmpty()) {
+                screen = backStack.last()
+                backStack = backStack.dropLast(1)
+            }
+        }
+
         Surface(modifier = Modifier.fillMaxSize(), color = Cream) {
             when (screen) {
                 Screen.Index -> RssIndex(
                     onRegister = { go(Screen.Mobile) },
+                    onProfile = { go(Screen.ProfileAccess) },
                     onDirectory = { go(Screen.Directory) },
                     onMyShakha = { go(Screen.MyShakha) },
                     onAdmin = { authViewModel.resetAdminState(); go(Screen.AdminLogin) },
@@ -88,7 +97,10 @@ fun SwayamsevakApp() {
                     MemberSearchPage(authViewModel)
                 }
                 Screen.MyShakha -> AppScaffold("मेरी शाखा", true, { back() }) {
-                    MyShakhaPage()
+                    MyShakhaPage(authViewModel)
+                }
+                Screen.ProfileAccess -> AppScaffold("मेरा प्रोफ़ाइल", true, { back() }) {
+                    ProfileAccessPage(authViewModel) { screen = Screen.Profile; backStack = emptyList() }
                 }
                 Screen.AdminLogin -> AppScaffold("Admin प्रवेश", true, { back() }) {
                     AdminLoginPage(authViewModel) { go(Screen.AdminConsole) }
@@ -103,11 +115,11 @@ fun SwayamsevakApp() {
                 Screen.Review -> AppScaffold("पंजीयन समीक्षा", true, { back() }) { Review(authViewModel, go) }
                 Screen.Success -> AppScaffold("पंजीयन सफल", false, {}) {
                     Success(authViewModel) {
-                        screen = Screen.Index
+                        screen = Screen.Profile
                         backStack = emptyList()
                     }
                 }
-                Screen.Profile -> AppScaffold("मेरा प्रोफ़ाइल", true, { back() }) { Profile() }
+                Screen.Profile -> AppScaffold("मेरा प्रोफ़ाइल", true, { back() }) { MemberProfilePage(authViewModel) }
                 Screen.Attendance -> AppScaffold("आज की उपस्थिति", true, { back() }) { Attendance() }
                 Screen.Poll -> AppScaffold("मतदान / सुझाव", true, { back() }) { Poll() }
             }
