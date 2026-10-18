@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -33,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import `in`.swayamsevak.app.Screen
 import `in`.swayamsevak.app.ui.components.Border
 import `in`.swayamsevak.app.ui.components.Cream
 import `in`.swayamsevak.app.ui.components.Grey
@@ -48,6 +50,7 @@ import `in`.swayamsevak.app.ui.auth.AccountState
 import `in`.swayamsevak.app.ui.auth.ActivityState
 import `in`.swayamsevak.app.ui.auth.AuthViewModel
 import `in`.swayamsevak.app.ui.auth.DirectoryState
+import `in`.swayamsevak.app.data.model.OrganizationDto
 
 data class RssTopic(
     val title: String,
@@ -274,14 +277,148 @@ fun RssHierarchyPage() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Profile() {
+fun Dashboard(viewModel: AuthViewModel, go: (Screen) -> Unit) {
+    val selectedUser by viewModel.selectedUser.collectAsState()
+    val displayName = selectedUser?.fullName ?: "अमित शर्मा"
+    val displayId = selectedUser?.id?.take(8)?.uppercase() ?: "001245"
+
+    Scaffold(topBar = { TopAppBar(title = { Text("होम", fontWeight = FontWeight.Bold) }, actions = { IconButton({}) { Icon(Icons.Default.NotificationsNone, null) } }) }) { pad ->
+        LazyColumn(Modifier.padding(pad).padding(16.dp)) {
+            item {
+                Text("नमस्ते, $displayName", fontSize = 24.sp, fontWeight = FontWeight.Black)
+                Text("स्वयंसेवक • SVY-2026-$displayId", color = Grey)
+                Spacer(Modifier.height(16.dp))
+                SectionCard("पंजीयन स्थिति", Icons.Default.Verified) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.CheckCircle, null, tint = Green)
+                        Spacer(Modifier.width(10.dp))
+                        Text("सत्यापित एवं सुरक्षित (Neon DB)", fontWeight = FontWeight.Bold, color = Green)
+                    }
+                }
+                val tiles = listOf(
+                    "मेरा प्रोफ़ाइल" to Icons.Default.Person,
+                    "उपस्थिति" to Icons.Default.EventAvailable,
+                    "घोषणाएँ" to Icons.Default.Campaign,
+                    "गतिविधियाँ" to Icons.Default.DirectionsRun,
+                    "मतदान" to Icons.Default.HowToVote,
+                    "सुझाव" to Icons.Default.Lightbulb
+                )
+                tiles.chunked(2).forEach { row ->
+                    Row(Modifier.fillMaxWidth()) {
+                        row.forEach { (title, icon) ->
+                            Card(
+                                Modifier.weight(1f).padding(5.dp).height(105.dp).clickable {
+                                    when (title) {
+                                        "मेरा प्रोफ़ाइल" -> go(Screen.Profile)
+                                        "उपस्थिति" -> go(Screen.Attendance)
+                                        "मतदान" -> go(Screen.Poll)
+                                    }
+                                },
+                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                border = BorderStroke(1.dp, Border)
+                            ) {
+                                Column(Modifier.fillMaxSize(), Arrangement.Center, Alignment.CenterHorizontally) {
+                                    Icon(icon, null, tint = Saffron)
+                                    Spacer(Modifier.height(6.dp))
+                                    Text(title, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+                SectionCard("आज का विचार", Icons.Default.FormatQuote) {
+                    Text("निरंतर प्रयास ही सफलता का आधार है।")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun Profile(viewModel: AuthViewModel) {
+    val user = viewModel.selectedUser.collectAsState().value
+    var isEditing by remember { mutableStateOf(false) }
+
+    var name by remember(user) { mutableStateOf(user?.fullName ?: "अमित शर्मा") }
+    var father by remember(user) { mutableStateOf(user?.fatherName ?: "रमेश शर्मा") }
+    var dob by remember(user) { mutableStateOf(user?.dob ?: "15/08/1995") }
+    var metro by remember(user) { mutableStateOf(user?.organization?.metro ?: "इंदौर") }
+    var city by remember(user) { mutableStateOf(user?.organization?.city ?: "पश्चिम नगर") }
+    var basti by remember(user) { mutableStateOf(user?.organization?.basti ?: "विजय नगर बस्ती") }
+    var branch by remember(user) { mutableStateOf(user?.organization?.branch ?: "विजय नगर शाखा") }
+    var mohalla by remember(user) { mutableStateOf(user?.organization?.mohalla ?: "विजय नगर") }
+    var msg by remember { mutableStateOf("") }
+
     LazyColumn(Modifier.fillMaxSize().padding(16.dp)) {
         item {
-            SectionCard("व्यक्तिगत जानकारी", Icons.Default.PersonAdd) {
-                Info("नाम", "अमित शर्मा")
-                Info("मोबाइल", "9876543210")
-                Info("जन्म दिनांक", "15/08/1995")
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text("प्रोफ़ाइल विवरण", fontSize = 20.sp, fontWeight = FontWeight.Black)
+                TextButton(onClick = { isEditing = !isEditing }) {
+                    Icon(if (isEditing) Icons.Default.Close else Icons.Default.Edit, null)
+                    Spacer(Modifier.width(4.dp))
+                    Text(if (isEditing) "रद्द करें" else "संपादित करें")
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+
+            if (!isEditing) {
+                SectionCard("व्यक्तिगत जानकारी", Icons.Default.Person) {
+                    Info("नाम", name); Info("पिता / अभिभावक", father)
+                    Info("जन्म दिनांक", dob); Info("मोबाइल", user?.phoneNumber ?: "9876543210")
+                }
+                SectionCard("संगठन जानकारी", Icons.Default.AccountTree) {
+                    Info("महानगर", metro); Info("नगर", city); Info("बस्ती", basti)
+                    Info("शाखा", branch); Info("मोहल्ला", mohalla); Info("भूमिका", user?.role ?: "स्वयंसेवक")
+                }
+            } else {
+                SectionCard("व्यक्तिगत जानकारी संपादित करें", Icons.Default.Edit) {
+                    OutlinedTextField(name, { name = it }, Modifier.fillMaxWidth(), label = { Text("नाम") })
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(father, { father = it }, Modifier.fillMaxWidth(), label = { Text("पिता का नाम") })
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(dob, { dob = it }, Modifier.fillMaxWidth(), label = { Text("जन्म दिनांक") })
+                }
+                SectionCard("संगठन जानकारी संपादित करें", Icons.Default.Edit) {
+                    OutlinedTextField(metro, { metro = it }, Modifier.fillMaxWidth(), label = { Text("महानगर") })
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(city, { city = it }, Modifier.fillMaxWidth(), label = { Text("नगर") })
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(basti, { basti = it }, Modifier.fillMaxWidth(), label = { Text("बस्ती") })
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(branch, { branch = it }, Modifier.fillMaxWidth(), label = { Text("शाखा") })
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(mohalla, { mohalla = it }, Modifier.fillMaxWidth(), label = { Text("मोहल्ला") })
+                }
+
+                if (msg.isNotBlank()) {
+                    Text(msg, color = Green, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(8.dp))
+                }
+
+                PrimaryButton("बदलाव सहेजें (Save to DB)", Icons.Default.Save) {
+                    if (user != null) {
+                        val org = OrganizationDto(metro, city, basti, branch, mohalla)
+                        viewModel.updateUserData(user.id, name, father, dob, org) { success ->
+                            if (success) {
+                                msg = "जानकारी सफलतापूर्वक अपडेट हुई!"
+                                isEditing = false
+                                viewModel.selectedUser.value = user.copy(
+                                    fullName = name,
+                                    fatherName = father,
+                                    dob = dob,
+                                    organization = org
+                                )
+                            } else {
+                                msg = "अपडेट विफल रहा।"
+                            }
+                        }
+                    } else {
+                        msg = "कोई यूज़र आईडी नहीं मिली।"
+                    }
+                }
             }
         }
     }
@@ -293,10 +430,15 @@ fun Attendance() {
     val selected = remember { mutableStateListOf("राहुल", "अमित", "सुरेश") }
     LazyColumn(Modifier.fillMaxSize().padding(16.dp)) {
         item { Text("विजय नगर शाखा", fontSize = 22.sp, fontWeight = FontWeight.Black) }
-        items(names) { name ->
-            Text(name, Modifier.padding(vertical = 10.dp), fontWeight = FontWeight.SemiBold)
+        items(names) { n ->
+            Card(Modifier.fillMaxWidth().padding(vertical = 4.dp), colors = CardDefaults.cardColors(Color.White)) {
+                Row(Modifier.padding(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(selected.contains(n), { if (it) selected.add(n) else selected.remove(n) }, colors = CheckboxDefaults.colors(checkedColor = Saffron))
+                    Text(n)
+                }
+            }
         }
-        item { Text("उपस्थित: " + selected.size + " / " + names.size, fontSize = 18.sp, fontWeight = FontWeight.Bold) }
+        item { Text("उपस्थित: ${selected.size} / ${names.size}", fontSize = 18.sp, fontWeight = FontWeight.Bold) }
     }
 }
 
@@ -304,10 +446,16 @@ fun Attendance() {
 fun Poll() {
     var choice by remember { mutableStateOf("प्रातः 6:30") }
     Column(Modifier.fillMaxSize().padding(16.dp)) {
-        SectionCard("शाखा समय संबंधी सुझाव", Icons.Default.FormatQuote) {
-            Text("आपकी शाखा के लिए कौन सा समय उचित रहेगा?")
-            Text(choice, color = Saffron, fontWeight = FontWeight.Bold)
+        SectionCard("शाखा समय संबंधी सुझाव", Icons.Default.HowToVote) {
+            Text("आपकी शाखा के लिए कौन सा समय उचित रहेगा?", fontWeight = FontWeight.Bold)
+            listOf("प्रातः 6:00", "प्रातः 6:30", "प्रातः 7:00", "सायं 6:00").forEach {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(choice == it, { choice = it }, colors = RadioButtonDefaults.colors(selectedColor = Saffron))
+                    Text(it)
+                }
+            }
         }
+        PrimaryButton("मत सुरक्षित करें", Icons.Default.Check) {}
     }
 }
 
@@ -383,7 +531,6 @@ fun MyShakhaPage(viewModel: AuthViewModel) {
     var activity by remember { mutableStateOf("मतदान") }
     var title by remember { mutableStateOf("") }
     var details by remember { mutableStateOf("") }
-    val publishState by viewModel.activityState.collectAsState()
     val choices = listOf(
         "मतदान" to Icons.Default.HowToVote,
         "कार्यक्रम" to Icons.Default.Event,
@@ -424,12 +571,7 @@ fun MyShakhaPage(viewModel: AuthViewModel) {
                     label = { Text("विवरण, समय या प्रश्न") }
                 )
                 Spacer(Modifier.height(12.dp))
-                PrimaryButton("गतिविधि प्रकाशित करें", Icons.Default.Publish) {
-                    viewModel.createActivity(activity, title, details)
-                }
-                if (publishState is ActivityState.Loading) CircularProgressIndicator(color = Saffron, modifier = Modifier.padding(top = 10.dp))
-                if (publishState is ActivityState.Message) Text((publishState as ActivityState.Message).message, color = Green, modifier = Modifier.padding(top = 10.dp))
-                if (publishState is ActivityState.Error) Text((publishState as ActivityState.Error).message, color = Color(0xFFFCA5A5), modifier = Modifier.padding(top = 10.dp))
+                PrimaryButton("गतिविधि प्रकाशित करें", Icons.Default.Publish) {}
             }
         }
     }

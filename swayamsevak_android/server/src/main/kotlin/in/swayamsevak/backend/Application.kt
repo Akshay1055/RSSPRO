@@ -11,6 +11,7 @@ import io.ktor.server.routing.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.mindrot.jbcrypt.BCrypt
@@ -123,6 +124,14 @@ data class CreateActivityRequest(val email: String, val type: String, val title:
 @Serializable
 data class ActivityResponse(val id: String, val shakha: String, val type: String, val title: String, val details: String)
 
+@Serializable
+data class UpdateUserRequest(
+    val fullName: String,
+    val fatherName: String,
+    val dob: String,
+    val organization: OrganizationDto
+)
+
 private fun requireEnv(name: String): String = System.getenv(name) ?: error("$name environment variable must be set")
 private fun now(): Long = System.currentTimeMillis()
 
@@ -150,7 +159,7 @@ private fun seedAdminFromEnvironment() {
     val username = System.getenv("ADMIN_USERNAME")?.trim()
     val pin = System.getenv("ADMIN_PIN")
     if (username.isNullOrBlank() || pin.isNullOrBlank()) return
-    if (AdminUsers.selectAll().where { AdminUsers.username eq username }.count() == 0) {
+    if (AdminUsers.selectAll().where { AdminUsers.username eq username }.count() == 0L) {
         AdminUsers.insert {
             it[AdminUsers.username] = username
             it[pinHash] = BCrypt.hashpw(pin, BCrypt.gensalt())
@@ -182,6 +191,65 @@ fun Application.module() {
         get("/") { call.respondText("RSSPRO backend is running") }
         get("/health") { call.respond(mapOf("status" to "ok")) }
         get("/api/ping") { call.respond(mapOf("message" to "RSSPRO backend is running")) }
+
+        get("/api/users") {
+            try {
+                val usersList = transaction {
+                    (Users leftJoin Organizations).selectAll().map {
+                        mapOf(
+                            "id" to it[Users.id].toString(),
+                            "phoneNumber" to it[Users.phoneNumber],
+                            "fullName" to it[Users.fullName],
+                            "fatherName" to (it[Users.fatherName] ?: ""),
+                            "dob" to (it[Users.dob] ?: ""),
+                            "role" to it[Users.role],
+                            "organization" to mapOf(
+                                "metro" to (it[Organizations.metro] ?: ""),
+                                "city" to (it[Organizations.city] ?: ""),
+                                "basti" to (it[Organizations.basti] ?: ""),
+                                "branch" to (it[Organizations.branch] ?: ""),
+                                "mohalla" to (it[Organizations.mohalla] ?: "")
+                            )
+                        )
+                    }
+                }
+                call.respond(usersList)
+            } catch (e: Exception) {
+                call.respond(io.ktor.http.HttpStatusCode.InternalServerError, mapOf("error" to (e.message ?: "Failed to fetch users")))
+            }
+        }
+
+        put("/api/users/{id}") {
+            val idStr = call.parameters["id"] ?: return@put call.respond(io.ktor.http.HttpStatusCode.BadRequest, "Missing user id")
+            val userId = try { UUID.fromString(idStr) } catch (e: Exception) { return@put call.respond(io.ktor.http.HttpStatusCode.BadRequest, "Invalid user id") }
+            val req = call.receive<UpdateUserRequest>()
+
+            if (req.fullName.isBlank() || req.fatherName.isBlank() || req.dob.isBlank() ||
+                req.organization.metro.isBlank() || req.organization.city.isBlank() || req.organization.basti.isBlank() ||
+                req.organization.branch.isBlank() || req.organization.mohalla.isBlank()) {
+                return@put call.respond(io.ktor.http.HttpStatusCode.BadRequest, "सभी अनिवार्य क्षेत्र भरना आवश्यक है")
+            }
+
+            try {
+                transaction {
+                    Users.update({ Users.id eq userId }) {
+                        it[fullName] = req.fullName
+                        it[fatherName] = req.fatherName
+                        it[dob] = req.dob
+                    }
+                    Organizations.update({ Organizations.userId eq userId }) {
+                        it[metro] = req.organization.metro
+                        it[city] = req.organization.city
+                        it[basti] = req.organization.basti
+                        it[branch] = req.organization.branch
+                        it[mohalla] = req.organization.mohalla
+                    }
+                }
+                call.respond(mapOf("status" to "SUCCESS"))
+            } catch (e: Exception) {
+                call.respond(io.ktor.http.HttpStatusCode.InternalServerError, mapOf("error" to (e.message ?: "Update failed")))
+            }
+        }
 
         get("/members") {
             val query = call.request.queryParameters["query"]?.trim().orEmpty()
@@ -307,7 +375,7 @@ fun Application.module() {
                 }
                 val code = String.format("%06d", SecureRandom().nextInt(1_000_000))
                 transaction {
-                    PasswordResetTokens.deleteWhere { PasswordResetTokens.userId eq user[Users.id] }
+                    PasswordResetTokens.deleteWhere { userId eq user[Users.id] }
                     PasswordResetTokens.insert {
                         it[userId] = user[Users.id]
                         it[codeHash] = BCrypt.hashpw(code, BCrypt.gensalt())
@@ -338,7 +406,7 @@ fun Application.module() {
                 }
                 transaction {
                     Users.update({ Users.id eq user[Users.id] }) { it[pinHash] = BCrypt.hashpw(request.newPin, BCrypt.gensalt()) }
-                    PasswordResetTokens.deleteWhere { PasswordResetTokens.userId eq user[Users.id] }
+                    PasswordResetTokens.deleteWhere { userId eq user[Users.id] }
                 }
                 call.respond(SimpleResponse(true, "PIN updated successfully"))
             }

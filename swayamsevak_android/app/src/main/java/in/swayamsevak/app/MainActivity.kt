@@ -22,13 +22,15 @@ import `in`.swayamsevak.app.ui.components.Cream
 import `in`.swayamsevak.app.ui.components.Saffron
 import `in`.swayamsevak.app.ui.components.SaffronDark
 import `in`.swayamsevak.app.ui.components.SurfaceDark
+import `in`.swayamsevak.app.ui.features.admin.*
 import `in`.swayamsevak.app.ui.features.auth.*
 import `in`.swayamsevak.app.ui.features.dashboard.*
 
 enum class Screen {
     Index, Library, Hierarchy, Directory, MyShakha, ProfileAccess, AdminLogin, AdminConsole,
     Mobile, Personal, Organization, Interest, Review, Success,
-    Profile, Attendance, Poll
+    Dashboard, Profile, Attendance, Poll,
+    Admin, Registrations, OrganizationAdmin, Developer, Permissions
 }
 
 @AndroidEntryPoint
@@ -119,9 +121,15 @@ fun SwayamsevakApp() {
                         backStack = emptyList()
                     }
                 }
+                Screen.Dashboard -> Dashboard(authViewModel, go)
                 Screen.Profile -> AppScaffold("मेरा प्रोफ़ाइल", true, { back() }) { MemberProfilePage(authViewModel) }
                 Screen.Attendance -> AppScaffold("आज की उपस्थिति", true, { back() }) { Attendance() }
                 Screen.Poll -> AppScaffold("मतदान / सुझाव", true, { back() }) { Poll() }
+                Screen.Admin -> AppScaffold("प्रशासन", true, { back() }) { Admin(authViewModel, go) }
+                Screen.Registrations -> AppScaffold("पंजीयन प्रबंधन", true, { back() }) { Registrations(authViewModel, go) }
+                Screen.OrganizationAdmin -> AppScaffold("संगठन प्रबंधन", true, { back() }) { OrganizationAdmin(authViewModel) }
+                Screen.Developer -> AppScaffold("फ़ील्ड प्रबंधन", true, { back() }) { Developer(authViewModel, go) }
+                Screen.Permissions -> AppScaffold("भूमिका एवं अधिकार", true, { back() }) { Permissions(authViewModel) }
             }
         }
     }

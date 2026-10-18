@@ -56,3 +56,22 @@ data class CreateActivityRequest(val email: String, val type: String, val title:
 
 @Serializable
 data class ActivityResponse(val id: String, val shakha: String, val type: String, val title: String, val details: String)
+
+@Serializable
+data class UserDetailDto(
+    val id: String,
+    val phoneNumber: String,
+    val fullName: String,
+    val fatherName: String,
+    val dob: String,
+    val role: String,
+    val organization: OrganizationDto
+)
+
+@Serializable
+data class UpdateUserRequest(
+    val fullName: String,
+    val fatherName: String,
+    val dob: String,
+    val organization: OrganizationDto
+)

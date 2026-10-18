@@ -41,7 +41,53 @@ class AuthViewModel @Inject constructor(private val repository: AuthRepository) 
     var mohalla = MutableStateFlow("विजय नगर")
     val interests = mutableStateListOf<String>()
 
+    // Users list for Admin / Registrations
+    private val _usersList = MutableStateFlow<List<UserDetailDto>>(emptyList())
+    val usersList = _usersList.asStateFlow()
+
+    // Selected user for details / editing
+    var selectedUser = MutableStateFlow<UserDetailDto?>(null)
+
+    fun fetchUsers() {
+        viewModelScope.launch {
+            repository.getUsers().fold(
+                onSuccess = { _usersList.value = it },
+                onFailure = { _usersList.value = emptyList() }
+            )
+        }
+    }
+
+    fun validatePhoneStep(): Boolean {
+        if (phone.value.isBlank() || phone.value.length < 10) {
+            _uiState.value = AuthUiState.Error("मोबाइल नंबर अनिवार्य है (कम से कम 10 अंक)")
+            return false
+        }
+        _uiState.value = AuthUiState.Idle
+        return true
+    }
+
+    fun validatePersonalStep(): Boolean {
+        if (name.value.isBlank() || fatherName.value.isBlank() || dob.value.isBlank()) {
+            _uiState.value = AuthUiState.Error("नाम, पिता का नाम और जन्म दिनांक सभी अनिवार्य हैं")
+            return false
+        }
+        _uiState.value = AuthUiState.Idle
+        return true
+    }
+
+    fun validateOrganizationStep(): Boolean {
+        if (metro.value.isBlank() || city.value.isBlank() || basti.value.isBlank() || branch.value.isBlank() || mohalla.value.isBlank()) {
+            _uiState.value = AuthUiState.Error("संगठन के सभी क्षेत्र (महानगर, नगर, बस्ती, शाखा, मोहल्ला) अनिवार्य हैं")
+            return false
+        }
+        _uiState.value = AuthUiState.Idle
+        return true
+    }
+
     fun submitRegistration() {
+        if (!validatePersonalStep() || !validateOrganizationStep()) {
+            return
+        }
         viewModelScope.launch {
             _uiState.value = AuthUiState.Loading
             val request = RegistrationRequest(
@@ -55,6 +101,19 @@ class AuthViewModel @Inject constructor(private val repository: AuthRepository) 
                     _uiState.value = AuthUiState.Registered(it.registrationId)
                 },
                 onFailure = { _uiState.value = AuthUiState.Error("मोबाइल नंबर या ईमेल पहले से पंजीकृत है, अथवा विवरण अधूरा है।") }
+            )
+        }
+    }
+
+    fun updateUserData(id: String, updatedName: String, updatedFather: String, updatedDob: String, org: OrganizationDto, onComplete: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val req = UpdateUserRequest(updatedName, updatedFather, updatedDob, org)
+            repository.updateUser(id, req).fold(
+                onSuccess = {
+                    fetchUsers()
+                    onComplete(true)
+                },
+                onFailure = { onComplete(false) }
             )
         }
     }

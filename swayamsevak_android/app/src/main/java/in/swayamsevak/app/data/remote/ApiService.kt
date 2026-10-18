@@ -4,6 +4,8 @@ import `in`.swayamsevak.app.data.model.*
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.PUT
+import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface ApiService {
@@ -30,4 +32,10 @@ interface ApiService {
 
     @POST("admin/login")
     suspend fun adminLogin(@Body request: AdminLoginRequest): AdminLoginResponse
+
+    @GET("api/users")
+    suspend fun getUsers(): List<UserDetailDto>
+
+    @PUT("api/users/{id}")
+    suspend fun updateUser(@Path("id") id: String, @Body request: UpdateUserRequest): Map<String, String>
 }

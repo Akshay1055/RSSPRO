@@ -15,4 +15,6 @@ class AuthRepository @Inject constructor(private val apiService: ApiService) {
     suspend fun createActivity(email: String, type: String, title: String, details: String): Result<SimpleResponse> = runCatching { apiService.createActivity(CreateActivityRequest(email, type, title, details)) }
     suspend fun activities(shakha: String): Result<List<ActivityResponse>> = runCatching { apiService.activities(shakha) }
     suspend fun adminLogin(username: String, pin: String): Result<AdminLoginResponse> = runCatching { apiService.adminLogin(AdminLoginRequest(username, pin)) }
+    suspend fun getUsers(): Result<List<UserDetailDto>> = runCatching { apiService.getUsers() }
+    suspend fun updateUser(id: String, request: UpdateUserRequest): Result<Map<String, String>> = runCatching { apiService.updateUser(id, request) }
 }
