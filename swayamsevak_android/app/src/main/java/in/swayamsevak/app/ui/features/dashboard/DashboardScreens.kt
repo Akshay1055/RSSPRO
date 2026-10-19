@@ -1,8 +1,10 @@
 package `in`.swayamsevak.app.ui.features.dashboard
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -42,6 +44,7 @@ import `in`.swayamsevak.app.ui.components.Green
 import `in`.swayamsevak.app.ui.components.Navy
 import `in`.swayamsevak.app.ui.components.PrimaryButton
 import `in`.swayamsevak.app.ui.components.Saffron
+import `in`.swayamsevak.app.ui.components.SaffronDark
 import `in`.swayamsevak.app.ui.components.SectionCard
 import `in`.swayamsevak.app.ui.components.Info
 import `in`.swayamsevak.app.ui.components.SurfaceDark
@@ -108,11 +111,8 @@ val rssTopics = listOf(
 @Composable
 fun RssIndex(
     onRegister: () -> Unit,
-    onProfile: () -> Unit,
-    onDirectory: () -> Unit,
     onMyShakha: () -> Unit,
     onAdmin: () -> Unit,
-    onHierarchy: () -> Unit,
     onTopic: (RssTopic) -> Unit
 ) {
     LazyColumn(
@@ -121,32 +121,58 @@ fun RssIndex(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            Text("राष्ट्रीय स्वयंसेवक संघ", fontSize = 27.sp, fontWeight = FontWeight.Black, color = Navy)
-            Spacer(Modifier.height(5.dp))
-            Text("जानें • जुड़ें • सहभागी बनें", color = Grey, fontSize = 16.sp)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .background(
+                            brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                                listOf(Saffron, SaffronDark)
+                            ),
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.Flag, contentDescription = null, tint = Color.White)
+                }
+                Spacer(Modifier.width(12.dp))
+                Column {
+                    Text("राष्ट्रीय स्वयंसेवक संघ", fontSize = 24.sp, fontWeight = FontWeight.Black, color = Navy)
+                    Text("जानें • जुड़ें • सहभागी बनें", color = Grey, fontSize = 14.sp)
+                }
+            }
             Spacer(Modifier.height(16.dp))
             Card(
-                colors = CardDefaults.cardColors(containerColor = Saffron),
+                colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+                modifier = Modifier.background(
+                    brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                        listOf(Saffron, SaffronDark)
+                    ),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp)
+                ),
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp)
             ) {
-                Column(Modifier.padding(18.dp)) {
-                    Text("आज से अपनी यात्रा शुरू करें", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
-                    Spacer(Modifier.height(6.dp))
-                    Text("RSS की गतिविधियों, विचारों और संगठन से एक ही स्थान पर जुड़ें।", color = Color.White)
-                    Spacer(Modifier.height(14.dp))
+                Column(Modifier.padding(20.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.AccountBalance, null, tint = Color.White, modifier = Modifier.size(32.dp))
+                        Spacer(Modifier.width(10.dp))
+                        Text("आज से अपनी यात्रा शुरू करें", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text("RSS की गतिविधियों, विचारों और संगठन से एक ही स्थान पर जुड़ें।", color = Color.White.copy(alpha = 0.9f))
+                    Spacer(Modifier.height(16.dp))
                     PrimaryButton("स्वयंसेवक पंजीयन", Icons.Default.PersonAdd, onRegister)
                 }
             }
             Spacer(Modifier.height(14.dp))
             Row(Modifier.fillMaxWidth()) {
-                HomeAction("सदस्य खोजें", Icons.Default.Search, Modifier.weight(1f), onDirectory)
                 HomeAction("मेरी शाखा", Icons.Default.Groups, Modifier.weight(1f), onMyShakha)
+                Spacer(Modifier.width(10.dp))
+                HomeAction("Admin प्रवेश", Icons.Default.AdminPanelSettings, Modifier.weight(1f), onAdmin)
             }
-            HomeAction("मेरा प्रोफ़ाइल", Icons.Default.Person, Modifier.fillMaxWidth(), onProfile)
-            HomeAction("Admin प्रवेश", Icons.Default.AdminPanelSettings, Modifier.fillMaxWidth(), onAdmin)
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(12.dp))
             Text("RSS को जानें", fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = Navy)
-            Text("किसी भी विषय को चुनकर उसका संक्षिप्त परिचय पढ़ें।", color = Grey)
+            Text("किसी भी विषय को चुनकर सामग्री और जानकारी पढ़ें।", color = Grey)
         }
         items(rssTopics.chunked(2)) { row ->
             Row(Modifier.fillMaxWidth()) {
@@ -154,27 +180,6 @@ fun RssIndex(
                     TopicTile(topic, Modifier.weight(1f), { onTopic(topic) })
                 }
                 if (row.size == 1) Spacer(Modifier.weight(1f))
-            }
-        }
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth().clickable(onClick = onHierarchy),
-                colors = CardDefaults.cardColors(containerColor = SurfaceDark, contentColor = Navy),
-                border = BorderStroke(1.dp, Border),
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)
-            ) {
-                Row(
-                    Modifier.padding(18.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Default.AccountTree, null, tint = Saffron, modifier = Modifier.size(32.dp))
-                    Spacer(Modifier.width(14.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text("RSS संगठन संरचना", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
-                        Text("क्षेत्र से शाखा तक संगठन का दृश्य क्रम", color = Grey)
-                    }
-                    Icon(Icons.Default.ArrowForward, null, tint = Saffron)
-                }
             }
         }
     }
@@ -203,7 +208,10 @@ private fun TopicTile(topic: RssTopic, modifier: Modifier, onClick: () -> Unit) 
 }
 
 @Composable
-fun RssTopicPage(topic: RssTopic) {
+fun RssTopicPage(topic: RssTopic, viewModel: AuthViewModel? = null) {
+    val topicDocsMap = viewModel?.topicDocs?.collectAsState()?.value ?: emptyMap()
+    val docPair = topicDocsMap[topic.title]
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(18.dp),
@@ -211,7 +219,7 @@ fun RssTopicPage(topic: RssTopic) {
     ) {
         item {
             Card(
-                colors = CardDefaults.cardColors(containerColor = Cream),
+                colors = CardDefaults.cardColors(containerColor = SurfaceDark),
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp)
             ) {
                 Column(
@@ -226,6 +234,48 @@ fun RssTopicPage(topic: RssTopic) {
                 }
             }
         }
+
+        docPair?.let { (pdfUrl, imageUrl) ->
+            if (pdfUrl.isNotBlank() || imageUrl.isNotBlank()) {
+                item {
+                    SectionCard("संलग्न दस्तावेज़ (PDF / Image)", Icons.Default.PictureAsPdf) {
+                        if (pdfUrl.isNotBlank()) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.PictureAsPdf, null, tint = Saffron)
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("PDF दस्तावेज़ उपलब्ध है", fontWeight = FontWeight.Bold)
+                                }
+                                Button(onClick = {}, colors = ButtonDefaults.buttonColors(containerColor = Saffron)) {
+                                    Text("खोलें")
+                                }
+                            }
+                        }
+                        if (imageUrl.isNotBlank()) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Image, null, tint = Saffron)
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("चित्र दस्तावेज़ उपलब्ध है", fontWeight = FontWeight.Bold)
+                                }
+                                Button(onClick = {}, colors = ButtonDefaults.buttonColors(containerColor = Saffron)) {
+                                    Text("दिखाएँ")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         item {
             SectionCard("मुख्य बिंदु", topic.icon) {
                 topic.highlights.forEach { highlight ->
@@ -401,7 +451,7 @@ fun Profile(viewModel: AuthViewModel) {
                 PrimaryButton("बदलाव सहेजें (Save to DB)", Icons.Default.Save) {
                     if (user != null) {
                         val org = OrganizationDto(metro, city, basti, branch, mohalla)
-                        viewModel.updateUserData(user.id, name, father, dob, org) { success ->
+                        viewModel.updateUserData(user.id, name, father, dob, "व्यवसाय", org) { success ->
                             if (success) {
                                 msg = "जानकारी सफलतापूर्वक अपडेट हुई!"
                                 isEditing = false
@@ -633,9 +683,171 @@ fun AdminConsolePage() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MyShakhaTabbedPage(viewModel: AuthViewModel) {
+    var selectedTabIndex by remember { mutableStateOf(0) }
+    val user = viewModel.selectedUser.collectAsState().value
+    val phoneVal by viewModel.phone.collectAsState()
+    val nameVal by viewModel.name.collectAsState()
+    val fatherVal by viewModel.fatherName.collectAsState()
+    val dobVal by viewModel.dob.collectAsState()
+    val occupationVal by viewModel.occupation.collectAsState()
+    val metroVal by viewModel.metro.collectAsState()
+    val cityVal by viewModel.city.collectAsState()
+    val bastiVal by viewModel.basti.collectAsState()
+    val branchVal by viewModel.branch.collectAsState()
+    val mohallaVal by viewModel.mohalla.collectAsState()
+    val mukhyaVal by viewModel.mukhyaShikshak.collectAsState()
+    val karyawahVal by viewModel.karyawah.collectAsState()
+
+    var isEditing by remember { mutableStateOf(false) }
+
+    var name by remember(user) { mutableStateOf(user?.fullName ?: nameVal.ifBlank { "अमित शर्मा" }) }
+    var father by remember(user) { mutableStateOf(user?.fatherName ?: fatherVal.ifBlank { "रमेश शर्मा" }) }
+    var dob by remember(user) { mutableStateOf(user?.dob ?: dobVal.ifBlank { "15/08/1995" }) }
+    var occupation by remember(user) { mutableStateOf(user?.occupation ?: occupationVal.ifBlank { "व्यवसाय / छात्र" }) }
+
+    var metro by remember(user) { mutableStateOf(user?.organization?.metro ?: metroVal) }
+    var city by remember(user) { mutableStateOf(user?.organization?.city ?: cityVal) }
+    var basti by remember(user) { mutableStateOf(user?.organization?.basti ?: bastiVal) }
+    var branch by remember(user) { mutableStateOf(user?.organization?.branch ?: branchVal) }
+    var mohalla by remember(user) { mutableStateOf(user?.organization?.mohalla ?: mohallaVal) }
+    var mukhyaShikshak by remember(user) { mutableStateOf(user?.organization?.mukhyaShikshak ?: mukhyaVal) }
+    var karyawah by remember(user) { mutableStateOf(user?.organization?.karyawah ?: karyawahVal) }
+    
+    var msg by remember { mutableStateOf("") }
+
+    Column(Modifier.fillMaxSize()) {
+        TabRow(
+            selectedTabIndex = selectedTabIndex,
+            containerColor = SurfaceDark,
+            contentColor = Saffron
+        ) {
+            Tab(
+                selected = selectedTabIndex == 0,
+                onClick = { selectedTabIndex = 0 },
+                text = { Text("व्यक्तिगत जानकारी", fontWeight = FontWeight.Bold, fontSize = 15.sp) },
+                icon = { Icon(Icons.Default.Person, null) }
+            )
+            Tab(
+                selected = selectedTabIndex == 1,
+                onClick = { selectedTabIndex = 1 },
+                text = { Text("शाखा जानकारी", fontWeight = FontWeight.Bold, fontSize = 15.sp) },
+                icon = { Icon(Icons.Default.Groups, null) }
+            )
+        }
+
+        LazyColumn(Modifier.fillMaxSize().padding(16.dp)) {
+            item {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        if (selectedTabIndex == 0) "व्यक्तिगत विवरण" else "शाखा विवरण एवं पदाधिकारी",
+                        fontSize = 20.sp, fontWeight = FontWeight.Black, color = Navy
+                    )
+                    TextButton(onClick = { isEditing = !isEditing }) {
+                        Icon(if (isEditing) Icons.Default.Close else Icons.Default.Edit, null)
+                        Spacer(Modifier.width(4.dp))
+                        Text(if (isEditing) "रद्द करें" else "संपादित करें")
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
+            }
+
+            if (selectedTabIndex == 0) {
+                item {
+                    if (!isEditing) {
+                        SectionCard("व्यक्तिगत जानकारी", Icons.Default.Person) {
+                            Info("नाम", name)
+                            Info("पिता / अभिभावक", father)
+                            Info("जन्म तिथि / आयु", dob)
+                            Info("व्यवसाय", occupation)
+                            Info("मोबाइल", user?.phoneNumber ?: phoneVal.ifBlank { "9876543210" })
+                            Info("भूमिका", user?.role ?: "स्वयंसेवक")
+                        }
+                    } else {
+                        SectionCard("व्यक्तिगत जानकारी संपादित करें", Icons.Default.Edit) {
+                            OutlinedTextField(name, { name = it }, Modifier.fillMaxWidth(), label = { Text("नाम") })
+                            Spacer(Modifier.height(8.dp))
+                            OutlinedTextField(father, { father = it }, Modifier.fillMaxWidth(), label = { Text("पिता का नाम") })
+                            Spacer(Modifier.height(8.dp))
+                            OutlinedTextField(dob, { dob = it }, Modifier.fillMaxWidth(), label = { Text("जन्म दिनांक") })
+                            Spacer(Modifier.height(8.dp))
+                            OutlinedTextField(occupation, { occupation = it }, Modifier.fillMaxWidth(), label = { Text("व्यवसाय / Occupation") })
+                        }
+                    }
+                }
+            } else {
+                item {
+                    if (!isEditing) {
+                        SectionCard("शाखा एवं क्षेत्र जानकारी", Icons.Default.AccountTree) {
+                            Info("बस्ती", basti)
+                            Info("शाखा", branch)
+                            Info("महानगर", metro)
+                            Info("नगर", city)
+                            Info("मोहल्ला", mohalla)
+                        }
+                        SectionCard("शाखा पदाधिकारी", Icons.Default.Badge) {
+                            Info("मुख्य शिक्षक", mukhyaShikshak)
+                            Info("कार्यवाह", karyawah)
+                        }
+                        SectionCard("शाखा समय एवं स्थान", Icons.Default.AccessTime) {
+                            Info("समय", "प्रातः 6:15 - 7:15")
+                            Info("स्थान", "विजय नगर पार्क मैदान")
+                        }
+                    } else {
+                        SectionCard("शाखा जानकारी संपादित करें", Icons.Default.Edit) {
+                            OutlinedTextField(metro, { metro = it }, Modifier.fillMaxWidth(), label = { Text("महानगर") })
+                            Spacer(Modifier.height(8.dp))
+                            OutlinedTextField(city, { city = it }, Modifier.fillMaxWidth(), label = { Text("नगर") })
+                            Spacer(Modifier.height(8.dp))
+                            OutlinedTextField(basti, { basti = it }, Modifier.fillMaxWidth(), label = { Text("बस्ती") })
+                            Spacer(Modifier.height(8.dp))
+                            OutlinedTextField(branch, { branch = it }, Modifier.fillMaxWidth(), label = { Text("शाखा") })
+                            Spacer(Modifier.height(8.dp))
+                            OutlinedTextField(mohalla, { mohalla = it }, Modifier.fillMaxWidth(), label = { Text("मोहल्ला") })
+                            Spacer(Modifier.height(8.dp))
+                            OutlinedTextField(mukhyaShikshak, { mukhyaShikshak = it }, Modifier.fillMaxWidth(), label = { Text("मुख्य शिक्षक") })
+                            Spacer(Modifier.height(8.dp))
+                            OutlinedTextField(karyawah, { karyawah = it }, Modifier.fillMaxWidth(), label = { Text("कार्यवाह") })
+                        }
+                    }
+                }
+            }
+
+            if (isEditing) {
+                item {
+                    if (msg.isNotBlank()) {
+                        Text(msg, color = Green, fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.height(8.dp))
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    PrimaryButton("बदलाव सहेजें (Save to DB)", Icons.Default.Save) {
+                        val org = OrganizationDto(metro, city, basti, branch, mohalla, mukhyaShikshak, karyawah)
+                        val idToUpdate = user?.id ?: "LOCAL_USER"
+                        viewModel.updateUserData(idToUpdate, name, father, dob, occupation, org) { success ->
+                            if (success) {
+                                msg = "जानकारी अपडेट हुई!"
+                                isEditing = false
+                            } else {
+                                msg = "स्थानीय बदलाव सहेजे गए!"
+                                isEditing = false
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 @Composable
 fun ProfileAccessPage(viewModel: AuthViewModel, onAuthenticated: () -> Unit) {
-    var email by remember { mutableStateOf("") }
+    var emailOrPhone by remember { mutableStateOf("") }
     var pin by remember { mutableStateOf("") }
     var code by remember { mutableStateOf("") }
     var newPin by remember { mutableStateOf("") }
@@ -648,28 +860,33 @@ fun ProfileAccessPage(viewModel: AuthViewModel, onAuthenticated: () -> Unit) {
 
     LazyColumn(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
-            Text(if (resetMode) "PIN रीसेट करें" else "अपने प्रोफ़ाइल में प्रवेश करें", fontSize = 23.sp, fontWeight = FontWeight.Black, color = Navy)
-            Text(if (resetMode) "ईमेल पर भेजे गए 6-अंकीय कोड से नया PIN बनाएँ।" else "पंजीकरण के समय दर्ज ईमेल और PIN का उपयोग करें।", color = Grey)
+            Text(if (resetMode) "PIN रीसेट करें" else "मेरी शाखा प्रवेश", fontSize = 23.sp, fontWeight = FontWeight.Black, color = Navy)
+            Text(if (resetMode) "ईमेल या मोबाइल नंबर पर भेजे गए कोड से नया PIN बनाएँ।" else "पंजीकरण का मोबाइल नंबर या ईमेल एवं PIN दर्ज करें।", color = Grey)
             Spacer(Modifier.height(16.dp))
-            OutlinedTextField(email, { email = it.trim() }, Modifier.fillMaxWidth(), label = { Text("ईमेल") }, singleLine = true)
+            OutlinedTextField(emailOrPhone, { emailOrPhone = it.trim() }, Modifier.fillMaxWidth(), label = { Text("मोबाइल नंबर या ईमेल") }, singleLine = true)
             if (resetMode) {
                 Spacer(Modifier.height(10.dp))
                 OutlinedTextField(code, { code = it }, Modifier.fillMaxWidth(), label = { Text("रीसेट कोड") }, singleLine = true)
                 Spacer(Modifier.height(10.dp))
                 OutlinedTextField(newPin, { newPin = it }, Modifier.fillMaxWidth(), label = { Text("नया PIN") }, singleLine = true)
-                Spacer(Modifier.height(12.dp))
-                PrimaryButton("नया PIN सुरक्षित करें", Icons.Default.LockReset) { viewModel.resetPin(email, code, newPin) }
-                TextButton(onClick = { viewModel.sendForgotPin(email) }) { Text("कोड फिर से भेजें") }
+                Spacer(Modifier.height(14.dp))
+                PrimaryButton("PIN अपडेट करें") { viewModel.resetPin(emailOrPhone, code, newPin) }
+                TextButton(onClick = { resetMode = false }) { Text("प्रवेश पर वापस जाएँ") }
             } else {
                 Spacer(Modifier.height(10.dp))
                 OutlinedTextField(pin, { pin = it }, Modifier.fillMaxWidth(), label = { Text("PIN") }, singleLine = true)
-                Spacer(Modifier.height(12.dp))
-                PrimaryButton("प्रोफ़ाइल खोलें", Icons.Default.Login) { viewModel.profileLogin(email, pin) }
-                TextButton(onClick = { resetMode = true }) { Text("PIN भूल गए? ईमेल से रीसेट करें") }
+                Spacer(Modifier.height(14.dp))
+                PrimaryButton("प्रवेश करें", Icons.Default.LockOpen) {
+                    viewModel.profileLogin(emailOrPhone, pin)
+                }
+                Spacer(Modifier.height(8.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    TextButton(onClick = { viewModel.sendForgotPin(emailOrPhone) }) { Text("PIN भूल गए?") }
+                    TextButton(onClick = { resetMode = true }) { Text("कोड दर्ज करें") }
+                }
             }
-            if (state is AccountState.Loading) CircularProgressIndicator(color = Saffron)
-            if (state is AccountState.Message) Text((state as AccountState.Message).message, color = Green)
             if (state is AccountState.Error) Text((state as AccountState.Error).message, color = Color(0xFFFCA5A5))
+            if (state is AccountState.Message) Text((state as AccountState.Message).message, color = Green)
         }
     }
 }

@@ -92,11 +92,12 @@ fun Personal(viewModel: AuthViewModel, go: (Screen) -> Unit) {
     val pin by viewModel.pin.collectAsState()
     val fatherName by viewModel.fatherName.collectAsState()
     val dob by viewModel.dob.collectAsState()
+    val occupation by viewModel.occupation.collectAsState()
 
     Column(Modifier.fillMaxSize().padding(18.dp)) {
         Step(2, 4)
         Spacer(Modifier.height(18.dp))
-        Text("प्रोफ़ाइल प्रवेश", fontSize = 19.sp, fontWeight = FontWeight.Bold)
+        Text("व्यक्तिगत जानकारी एवं प्रोफ़ाइल प्रवेश", fontSize = 19.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
         OutlinedTextField(email, { viewModel.email.value = it.trim() }, Modifier.fillMaxWidth(), label = { Text("ईमेल") }, singleLine = true)
         Spacer(Modifier.height(12.dp))
@@ -104,11 +105,11 @@ fun Personal(viewModel: AuthViewModel, go: (Screen) -> Unit) {
         Spacer(Modifier.height(18.dp))
         OutlinedTextField(name, { viewModel.name.value = it }, Modifier.fillMaxWidth(), label = { Text("नाम") })
         Spacer(Modifier.height(12.dp))
-        OutlinedTextField("", {}, Modifier.fillMaxWidth(), label = { Text("नाम (अंग्रेज़ी में)") })
-        Spacer(Modifier.height(12.dp))
         OutlinedTextField(fatherName, { viewModel.fatherName.value = it }, Modifier.fillMaxWidth(), label = { Text("पिता / अभिभावक का नाम") })
         Spacer(Modifier.height(12.dp))
-        OutlinedTextField(dob, { viewModel.dob.value = it }, Modifier.fillMaxWidth(), label = { Text("जन्म दिनांक") })
+        OutlinedTextField(dob, { viewModel.dob.value = it }, Modifier.fillMaxWidth(), label = { Text("जन्म दिनांक (DD/MM/YYYY)") })
+        Spacer(Modifier.height(12.dp))
+        OutlinedTextField(occupation, { viewModel.occupation.value = it }, Modifier.fillMaxWidth(), label = { Text("व्यवसाय / Occupation (उदा. नौकरी, व्यवसाय, छात्र)") })
         Spacer(Modifier.weight(1f))
         PrimaryButton("आगे बढ़ें") { go(Screen.Organization) }
     }
@@ -208,6 +209,7 @@ fun Review(viewModel: AuthViewModel, go: (Screen) -> Unit) {
     val father by viewModel.fatherName.collectAsState()
     val dob by viewModel.dob.collectAsState()
     val phone by viewModel.phone.collectAsState()
+    val occupation by viewModel.occupation.collectAsState()
     
     val metro by viewModel.metro.collectAsState()
     val city by viewModel.city.collectAsState()
@@ -225,7 +227,8 @@ fun Review(viewModel: AuthViewModel, go: (Screen) -> Unit) {
         item {
             SectionCard("व्यक्तिगत जानकारी", Icons.Default.Person) {
                 Info("नाम", name); Info("पिता / अभिभावक", father)
-                Info("जन्म दिनांक", dob); Info("मोबाइल", phone)
+                Info("जन्म दिनांक", dob); Info("व्यवसाय", if (occupation.isBlank()) "व्यवसाय / सेवा" else occupation)
+                Info("मोबाइल", phone)
             }
             SectionCard("संगठन", Icons.Default.AccountTree) {
                 Info("महानगर", metro); Info("नगर", city); Info("बस्ती", basti)

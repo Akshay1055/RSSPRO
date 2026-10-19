@@ -27,10 +27,10 @@ import `in`.swayamsevak.app.ui.features.auth.*
 import `in`.swayamsevak.app.ui.features.dashboard.*
 
 enum class Screen {
-    Index, Library, Hierarchy, Directory, MyShakha, ProfileAccess, AdminLogin, AdminConsole,
+    Index, Library, Directory, MyShakha, ProfileAccess, AdminLogin, AdminConsole,
     Mobile, Personal, Organization, Interest, Review, Success,
     Dashboard, Profile, Attendance, Poll,
-    Admin, Registrations, OrganizationAdmin, Developer, Permissions
+    Admin, Registrations, OrganizationAdmin, Developer, Permissions, AppDetailsAdmin
 }
 
 @AndroidEntryPoint
@@ -65,13 +65,21 @@ fun SwayamsevakApp() {
             if (backStack.isNotEmpty()) {
                 screen = backStack.last()
                 backStack = backStack.dropLast(1)
+            } else {
+                screen = Screen.Index
             }
+        }
+        val goHome = {
+            backStack = emptyList()
+            screen = Screen.Index
         }
 
         BackHandler {
             if (backStack.isNotEmpty()) {
                 screen = backStack.last()
                 backStack = backStack.dropLast(1)
+            } else if (screen != Screen.Index) {
+                screen = Screen.Index
             }
         }
 
@@ -79,57 +87,52 @@ fun SwayamsevakApp() {
             when (screen) {
                 Screen.Index -> RssIndex(
                     onRegister = { go(Screen.Mobile) },
-                    onProfile = { go(Screen.ProfileAccess) },
-                    onDirectory = { go(Screen.Directory) },
-                    onMyShakha = { go(Screen.MyShakha) },
+                    onMyShakha = { go(Screen.ProfileAccess) },
                     onAdmin = { authViewModel.resetAdminState(); go(Screen.AdminLogin) },
-                    onHierarchy = { go(Screen.Hierarchy) },
                     onTopic = { topic ->
                         selectedTopic = topic
                         go(Screen.Library)
                     }
                 )
-                Screen.Library -> AppScaffold(selectedTopic?.title ?: "RSS", true, { back() }) {
-                    RssTopicPage(selectedTopic ?: rssTopics.first())
+                Screen.Library -> AppScaffold(selectedTopic?.title ?: "RSS", true, { back() }, goHome) {
+                    RssTopicPage(selectedTopic ?: rssTopics.first(), authViewModel)
                 }
-                Screen.Hierarchy -> AppScaffold("RSS संगठन संरचना", true, { back() }) {
-                    RssHierarchyPage()
-                }
-                Screen.Directory -> AppScaffold("सदस्य खोजें", true, { back() }) {
+                Screen.Directory -> AppScaffold("सदस्य खोजें (प्रशासन)", true, { back() }, goHome) {
                     MemberSearchPage(authViewModel)
                 }
-                Screen.MyShakha -> AppScaffold("मेरी शाखा", true, { back() }) {
-                    MyShakhaPage(authViewModel)
+                Screen.MyShakha -> AppScaffold("मेरी शाखा", true, { back() }, goHome) {
+                    MyShakhaTabbedPage(authViewModel)
                 }
-                Screen.ProfileAccess -> AppScaffold("मेरा प्रोफ़ाइल", true, { back() }) {
-                    ProfileAccessPage(authViewModel) { screen = Screen.Profile; backStack = emptyList() }
+                Screen.ProfileAccess -> AppScaffold("मेरी शाखा प्रवेश", true, { back() }, goHome) {
+                    ProfileAccessPage(authViewModel) { screen = Screen.MyShakha; backStack = listOf(Screen.Index) }
                 }
-                Screen.AdminLogin -> AppScaffold("Admin प्रवेश", true, { back() }) {
-                    AdminLoginPage(authViewModel) { go(Screen.AdminConsole) }
+                Screen.AdminLogin -> AppScaffold("Admin प्रवेश", true, { back() }, goHome) {
+                    AdminLoginPage(authViewModel) { go(Screen.Admin) }
                 }
-                Screen.AdminConsole -> AppScaffold("शाखा प्रबंधन", true, { back() }) {
+                Screen.AdminConsole -> AppScaffold("शाखा प्रबंधन", true, { back() }, goHome) {
                     AdminConsolePage()
                 }
-                Screen.Mobile -> AppScaffold("स्वयंसेवक पंजीयन", true, { back() }) { Mobile(authViewModel, go) }
-                Screen.Personal -> AppScaffold("व्यक्तिगत जानकारी", true, { back() }) { Personal(authViewModel, go) }
-                Screen.Organization -> AppScaffold("संगठन जानकारी", true, { back() }) { Organization(authViewModel, go) }
-                Screen.Interest -> AppScaffold("रुचि / कार्यक्षेत्र", true, { back() }) { Interest(authViewModel, go) }
-                Screen.Review -> AppScaffold("पंजीयन समीक्षा", true, { back() }) { Review(authViewModel, go) }
-                Screen.Success -> AppScaffold("पंजीयन सफल", false, {}) {
+                Screen.Mobile -> AppScaffold("स्वयंसेवक पंजीयन", true, { back() }, goHome) { Mobile(authViewModel, go) }
+                Screen.Personal -> AppScaffold("व्यक्तिगत जानकारी", true, { back() }, goHome) { Personal(authViewModel, go) }
+                Screen.Organization -> AppScaffold("संगठन जानकारी", true, { back() }, goHome) { Organization(authViewModel, go) }
+                Screen.Interest -> AppScaffold("रुचि / कार्यक्षेत्र", true, { back() }, goHome) { Interest(authViewModel, go) }
+                Screen.Review -> AppScaffold("पंजीयन समीक्षा", true, { back() }, goHome) { Review(authViewModel, go) }
+                Screen.Success -> AppScaffold("पंजीयन सफल", false, {}, goHome) {
                     Success(authViewModel) {
-                        screen = Screen.Profile
-                        backStack = emptyList()
+                        screen = Screen.MyShakha
+                        backStack = listOf(Screen.Index)
                     }
                 }
                 Screen.Dashboard -> Dashboard(authViewModel, go)
-                Screen.Profile -> AppScaffold("मेरा प्रोफ़ाइल", true, { back() }) { MemberProfilePage(authViewModel) }
-                Screen.Attendance -> AppScaffold("आज की उपस्थिति", true, { back() }) { Attendance() }
-                Screen.Poll -> AppScaffold("मतदान / सुझाव", true, { back() }) { Poll() }
-                Screen.Admin -> AppScaffold("प्रशासन", true, { back() }) { Admin(authViewModel, go) }
-                Screen.Registrations -> AppScaffold("पंजीयन प्रबंधन", true, { back() }) { Registrations(authViewModel, go) }
-                Screen.OrganizationAdmin -> AppScaffold("संगठन प्रबंधन", true, { back() }) { OrganizationAdmin(authViewModel) }
-                Screen.Developer -> AppScaffold("फ़ील्ड प्रबंधन", true, { back() }) { Developer(authViewModel, go) }
-                Screen.Permissions -> AppScaffold("भूमिका एवं अधिकार", true, { back() }) { Permissions(authViewModel) }
+                Screen.Profile -> AppScaffold("मेरी शाखा", true, { back() }, goHome) { MyShakhaTabbedPage(authViewModel) }
+                Screen.Attendance -> AppScaffold("आज की उपस्थिति", true, { back() }, goHome) { Attendance() }
+                Screen.Poll -> AppScaffold("मतदान / सुझाव", true, { back() }, goHome) { Poll() }
+                Screen.Admin -> AppScaffold("प्रशासन", true, { back() }, goHome) { Admin(authViewModel, go) }
+                Screen.Registrations -> AppScaffold("पंजीयन एवं खोज प्रबंधन", true, { back() }, goHome) { Registrations(authViewModel, go) }
+                Screen.OrganizationAdmin -> AppScaffold("संगठन संरचना प्रबंधन", true, { back() }, goHome) { OrganizationAdmin(authViewModel) }
+                Screen.Developer -> AppScaffold("ऐप विवरण एवं विकल्प प्रबंधन", true, { back() }, goHome) { AppDetailsAdminPage(authViewModel) }
+                Screen.Permissions -> AppScaffold("भूमिका एवं अधिकार", true, { back() }, goHome) { Permissions(authViewModel) }
+                Screen.AppDetailsAdmin -> AppScaffold("सामग्री एवं विवरण प्रबंधन", true, { back() }, goHome) { AppDetailsAdminPage(authViewModel) }
             }
         }
     }

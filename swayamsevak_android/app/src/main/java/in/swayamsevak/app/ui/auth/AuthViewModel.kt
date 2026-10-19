@@ -34,12 +34,32 @@ class AuthViewModel @Inject constructor(private val repository: AuthRepository) 
     var name = MutableStateFlow("")
     var fatherName = MutableStateFlow("")
     var dob = MutableStateFlow("")
+    var occupation = MutableStateFlow("")
     var metro = MutableStateFlow("इंदौर")
     var city = MutableStateFlow("पश्चिम नगर")
     var basti = MutableStateFlow("विजय नगर बस्ती")
     var branch = MutableStateFlow("विजय नगर शाखा")
     var mohalla = MutableStateFlow("विजय नगर")
+    var mukhyaShikshak = MutableStateFlow("राजेश वर्मा")
+    var karyawah = MutableStateFlow("राकेश जोशी")
     val interests = mutableStateListOf<String>()
+
+    // Admin Configurable App Options
+    var adminAppTitle = MutableStateFlow("स्वयंसेवक V2")
+    var adminMahanagarList = MutableStateFlow(mutableListOf("इंदौर", "भोपाल", "उज्जैन", "ग्वालियर", "जबलपुर"))
+    var adminCityList = MutableStateFlow(mutableListOf("पश्चिम नगर", "पूर्व नगर", "उत्तर नगर", "दक्षिण नगर"))
+    var adminInterestList = MutableStateFlow(mutableListOf("शारीरिक", "बौद्धिक", "सेवा", "आईटी", "प्रचार", "पर्यावरण"))
+    // Map of topic title to Pair(pdfUrl, imageUrl)
+    var topicDocs = MutableStateFlow(
+        mutableMapOf(
+            "RSS प्रार्थना" to Pair("https://example.com/prarthana.pdf", "https://example.com/prarthana.jpg"),
+            "शाखा पद्धति" to Pair("https://example.com/shakha_paddhati.pdf", ""),
+            "गीत" to Pair("https://example.com/geet.pdf", ""),
+            "अमृत वचन" to Pair("https://example.com/amrit_vachan.pdf", ""),
+            "शाखा खेल" to Pair("https://example.com/khel.pdf", ""),
+            "RSS इतिहास" to Pair("https://example.com/history.pdf", "")
+        )
+    )
 
     // Users list for Admin / Registrations
     private val _usersList = MutableStateFlow<List<UserDetailDto>>(emptyList())
@@ -92,12 +112,13 @@ class AuthViewModel @Inject constructor(private val repository: AuthRepository) 
             _uiState.value = AuthUiState.Loading
             val request = RegistrationRequest(
                 phone.value, email.value.trim(), pin.value, name.value, fatherName.value, dob.value,
-                OrganizationDto(metro.value, city.value, basti.value, branch.value, mohalla.value),
+                if (occupation.value.isBlank()) "व्यवसाय / सेवा" else occupation.value,
+                OrganizationDto(metro.value, city.value, basti.value, branch.value, mohalla.value, mukhyaShikshak.value, karyawah.value),
                 interests.toList()
             )
             repository.register(request).fold(
                 onSuccess = {
-                    _profile.value = ProfileResponse(it.registrationId, name.value, phone.value, email.value, branch.value, "स्वयंसेवक")
+                    _profile.value = ProfileResponse(it.registrationId, name.value, phone.value, email.value, branch.value, "स्वयंसेवक", occupation.value, mukhyaShikshak.value, karyawah.value)
                     _uiState.value = AuthUiState.Registered(it.registrationId)
                 },
                 onFailure = { _uiState.value = AuthUiState.Error("मोबाइल नंबर या ईमेल पहले से पंजीकृत है, अथवा विवरण अधूरा है।") }
@@ -105,9 +126,9 @@ class AuthViewModel @Inject constructor(private val repository: AuthRepository) 
         }
     }
 
-    fun updateUserData(id: String, updatedName: String, updatedFather: String, updatedDob: String, org: OrganizationDto, onComplete: (Boolean) -> Unit) {
+    fun updateUserData(id: String, updatedName: String, updatedFather: String, updatedDob: String, updatedOccupation: String, org: OrganizationDto, onComplete: (Boolean) -> Unit) {
         viewModelScope.launch {
-            val req = UpdateUserRequest(updatedName, updatedFather, updatedDob, org)
+            val req = UpdateUserRequest(updatedName, updatedFather, updatedDob, updatedOccupation, org)
             repository.updateUser(id, req).fold(
                 onSuccess = {
                     fetchUsers()

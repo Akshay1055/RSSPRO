@@ -5,6 +5,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -26,7 +27,13 @@ val Green = Color(0xFF4ADE80)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppScaffold(title: String, back: Boolean, onBack: () -> Unit, content: @Composable () -> Unit) {
+fun AppScaffold(
+    title: String,
+    back: Boolean = true,
+    onBack: () -> Unit = {},
+    onHome: (() -> Unit)? = null,
+    content: @Composable () -> Unit
+) {
     Scaffold(
         containerColor = Cream,
         topBar = {
@@ -34,11 +41,19 @@ fun AppScaffold(title: String, back: Boolean, onBack: () -> Unit, content: @Comp
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = SurfaceDark,
                     titleContentColor = Navy,
-                    navigationIconContentColor = Navy
+                    navigationIconContentColor = Navy,
+                    actionIconContentColor = Navy
                 ),
                 title = { Text(title, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     if (back) IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null) }
+                },
+                actions = {
+                    onHome?.let { homeAction ->
+                        IconButton(onClick = homeAction) {
+                            Icon(Icons.Default.Home, contentDescription = "होम", tint = Saffron)
+                        }
+                    }
                 }
             )
         }

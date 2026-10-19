@@ -10,6 +10,7 @@ data class RegistrationRequest(
     val fullName: String,
     val fatherName: String,
     val dob: String,
+    val occupation: String = "व्यवसाय / छात्र",
     val organization: OrganizationDto,
     val interests: List<String>
 )
@@ -18,7 +19,15 @@ data class RegistrationRequest(
 data class RegistrationResponse(val registrationId: String, val status: String)
 
 @Serializable
-data class OrganizationDto(val metro: String, val city: String, val basti: String, val branch: String, val mohalla: String)
+data class OrganizationDto(
+    val metro: String,
+    val city: String,
+    val basti: String,
+    val branch: String,
+    val mohalla: String,
+    val mukhyaShikshak: String = "राजेश वर्मा",
+    val karyawah: String = "राकेश जोशी"
+)
 
 @Serializable
 data class MemberSummary(val id: String, val fullName: String, val shakha: String)
@@ -33,7 +42,10 @@ data class ProfileResponse(
     val phoneNumber: String,
     val email: String,
     val shakha: String,
-    val role: String
+    val role: String,
+    val occupation: String = "व्यवसाय / सेवा",
+    val mukhyaShikshak: String = "राजेश वर्मा",
+    val karyawah: String = "राकेश जोशी"
 )
 
 @Serializable
@@ -65,6 +77,7 @@ data class UserDetailDto(
     val fatherName: String,
     val dob: String,
     val role: String,
+    val occupation: String = "व्यवसाय / छात्र",
     val organization: OrganizationDto
 )
 
@@ -73,5 +86,6 @@ data class UpdateUserRequest(
     val fullName: String,
     val fatherName: String,
     val dob: String,
+    val occupation: String = "व्यवसाय / छात्र",
     val organization: OrganizationDto
 )
