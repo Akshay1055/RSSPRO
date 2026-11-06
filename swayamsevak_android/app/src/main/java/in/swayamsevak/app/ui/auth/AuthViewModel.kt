@@ -61,6 +61,26 @@ class AuthViewModel @Inject constructor(private val repository: AuthRepository) 
         )
     )
 
+    // Admin Report Filters
+    var reportMetroFilter = MutableStateFlow("इंदौर")
+    var reportCityFilter = MutableStateFlow("पश्चिम नगर")
+    var reportInterestFilter = MutableStateFlow("सभी")
+    var reportRoleFilter = MutableStateFlow("सभी")
+
+    fun getFilteredUsersForReport(): List<UserDetailDto> {
+        val list = usersList.value
+        val metro = reportMetroFilter.value
+        val city = reportCityFilter.value
+        val role = reportRoleFilter.value
+
+        return list.filter { user ->
+            val matchMetro = metro.isBlank() || user.organization.metro.contains(metro, ignoreCase = true)
+            val matchCity = city.isBlank() || user.organization.city.contains(city, ignoreCase = true)
+            val matchRole = role == "सभी" || user.role.contains(role, ignoreCase = true)
+            matchMetro && matchCity && matchRole
+        }
+    }
+
     // Users list for Admin / Registrations
     private val _usersList = MutableStateFlow<List<UserDetailDto>>(emptyList())
     val usersList = _usersList.asStateFlow()
@@ -139,14 +159,42 @@ class AuthViewModel @Inject constructor(private val repository: AuthRepository) 
         }
     }
 
-    fun profileLogin(loginEmail: String, loginPin: String) {
+    // Simplified Mobile-Only Login for Meri Shakha (PIN-less)
+    fun mobileLogin(mobileNumber: String, onComplete: (Boolean, String?) -> Unit) {
+        val cleanPhone = mobileNumber.filter { it.isDigit() }
+        if (cleanPhone.length < 10) {
+            _accountState.value = AccountState.Error("कृपया 10 अंकों का मोबाइल नंबर दर्ज करें।")
+            onComplete(false, "कृपया 10 अंकों का मोबाइल नंबर दर्ज करें।")
+            return
+        }
         viewModelScope.launch {
             _accountState.value = AccountState.Loading
-            repository.profileLogin(loginEmail, loginPin).fold(
-                onSuccess = { _profile.value = it; _accountState.value = AccountState.Authenticated },
-                onFailure = { _accountState.value = AccountState.Error("ईमेल या PIN सही नहीं है।") }
-            )
+            // Find existing user by phone or create authenticated session
+            val matchedUser = usersList.value.find { it.phoneNumber.contains(cleanPhone) }
+            if (matchedUser != null) {
+                selectedUser.value = matchedUser
+                _profile.value = ProfileResponse(
+                    id = matchedUser.id,
+                    fullName = matchedUser.fullName,
+                    phoneNumber = matchedUser.phoneNumber,
+                    email = "swayamsevak@rss.org",
+                    shakha = matchedUser.organization.branch,
+                    role = matchedUser.role,
+                    occupation = matchedUser.occupation,
+                    mukhyaShikshak = matchedUser.organization.mukhyaShikshak,
+                    karyawah = matchedUser.organization.karyawah
+                )
+            } else {
+                // If not found in API list, use entered phone for current session
+                phone.value = cleanPhone
+            }
+            _accountState.value = AccountState.Authenticated
+            onComplete(true, null)
         }
+    }
+
+    fun profileLogin(loginEmail: String, loginPin: String) {
+        mobileLogin(loginEmail) { _, _ -> }
     }
 
     fun sendForgotPin(emailAddress: String) {

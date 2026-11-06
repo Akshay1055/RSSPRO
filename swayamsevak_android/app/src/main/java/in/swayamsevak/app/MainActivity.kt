@@ -30,7 +30,7 @@ enum class Screen {
     Index, Library, Directory, MyShakha, ProfileAccess, AdminLogin, AdminConsole,
     Mobile, Personal, Organization, Interest, Review, Success,
     Dashboard, Profile, Attendance, Poll,
-    Admin, Registrations, OrganizationAdmin, Developer, Permissions, AppDetailsAdmin
+    Admin, Registrations, OrganizationAdmin, Developer, AppDetailsAdmin
 }
 
 @AndroidEntryPoint
@@ -130,8 +130,7 @@ fun SwayamsevakApp() {
                 Screen.Admin -> AppScaffold("प्रशासन", true, { back() }, goHome) { Admin(authViewModel, go) }
                 Screen.Registrations -> AppScaffold("पंजीयन एवं खोज प्रबंधन", true, { back() }, goHome) { Registrations(authViewModel, go) }
                 Screen.OrganizationAdmin -> AppScaffold("संगठन संरचना प्रबंधन", true, { back() }, goHome) { OrganizationAdmin(authViewModel) }
-                Screen.Developer -> AppScaffold("ऐप विवरण एवं विकल्प प्रबंधन", true, { back() }, goHome) { AppDetailsAdminPage(authViewModel) }
-                Screen.Permissions -> AppScaffold("भूमिका एवं अधिकार", true, { back() }, goHome) { Permissions(authViewModel) }
+                Screen.Developer -> AppScaffold("फ़ील्ड प्रबंधन (DeveloperAdmin)", true, { back() }, goHome) { Developer(authViewModel, go) }
                 Screen.AppDetailsAdmin -> AppScaffold("सामग्री एवं विवरण प्रबंधन", true, { back() }, goHome) { AppDetailsAdminPage(authViewModel) }
             }
         }

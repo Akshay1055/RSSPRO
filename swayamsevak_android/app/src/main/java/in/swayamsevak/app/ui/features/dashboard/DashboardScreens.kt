@@ -847,11 +847,10 @@ fun MyShakhaTabbedPage(viewModel: AuthViewModel) {
 
 @Composable
 fun ProfileAccessPage(viewModel: AuthViewModel, onAuthenticated: () -> Unit) {
-    var emailOrPhone by remember { mutableStateOf("") }
-    var pin by remember { mutableStateOf("") }
-    var code by remember { mutableStateOf("") }
-    var newPin by remember { mutableStateOf("") }
-    var resetMode by remember { mutableStateOf(false) }
+    var mobileNumber by remember { mutableStateOf("") }
+    var useAppLock by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isAuthenticatingLock by remember { mutableStateOf(false) }
     val state by viewModel.accountState.collectAsState()
 
     LaunchedEffect(state) {
@@ -860,33 +859,76 @@ fun ProfileAccessPage(viewModel: AuthViewModel, onAuthenticated: () -> Unit) {
 
     LazyColumn(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
-            Text(if (resetMode) "PIN रीसेट करें" else "मेरी शाखा प्रवेश", fontSize = 23.sp, fontWeight = FontWeight.Black, color = Navy)
-            Text(if (resetMode) "ईमेल या मोबाइल नंबर पर भेजे गए कोड से नया PIN बनाएँ।" else "पंजीकरण का मोबाइल नंबर या ईमेल एवं PIN दर्ज करें।", color = Grey)
+            Icon(Icons.Default.PhoneAndroid, null, tint = Saffron, modifier = Modifier.size(48.dp))
+            Spacer(Modifier.height(8.dp))
+            Text("मेरी शाखा में प्रवेश करें", fontSize = 24.sp, fontWeight = FontWeight.Black, color = Navy)
+            Text("PIN की आवश्यकता नहीं है। अपना पंजीकृत 10-अंकीय मोबाइल नंबर लिखें:", color = Grey)
             Spacer(Modifier.height(16.dp))
-            OutlinedTextField(emailOrPhone, { emailOrPhone = it.trim() }, Modifier.fillMaxWidth(), label = { Text("मोबाइल नंबर या ईमेल") }, singleLine = true)
-            if (resetMode) {
-                Spacer(Modifier.height(10.dp))
-                OutlinedTextField(code, { code = it }, Modifier.fillMaxWidth(), label = { Text("रीसेट कोड") }, singleLine = true)
-                Spacer(Modifier.height(10.dp))
-                OutlinedTextField(newPin, { newPin = it }, Modifier.fillMaxWidth(), label = { Text("नया PIN") }, singleLine = true)
-                Spacer(Modifier.height(14.dp))
-                PrimaryButton("PIN अपडेट करें") { viewModel.resetPin(emailOrPhone, code, newPin) }
-                TextButton(onClick = { resetMode = false }) { Text("प्रवेश पर वापस जाएँ") }
-            } else {
-                Spacer(Modifier.height(10.dp))
-                OutlinedTextField(pin, { pin = it }, Modifier.fillMaxWidth(), label = { Text("PIN") }, singleLine = true)
-                Spacer(Modifier.height(14.dp))
-                PrimaryButton("प्रवेश करें", Icons.Default.LockOpen) {
-                    viewModel.profileLogin(emailOrPhone, pin)
-                }
-                Spacer(Modifier.height(8.dp))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    TextButton(onClick = { viewModel.sendForgotPin(emailOrPhone) }) { Text("PIN भूल गए?") }
-                    TextButton(onClick = { resetMode = true }) { Text("कोड दर्ज करें") }
+
+            OutlinedTextField(
+                value = mobileNumber,
+                onValueChange = { input -> 
+                    mobileNumber = input.filter { it.isDigit() }
+                    errorMessage = null 
+                },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("पंजीकृत मोबाइल नंबर") },
+                prefix = { Text("+91  ", fontWeight = FontWeight.Bold) },
+                leadingIcon = { Icon(Icons.Default.Phone, null) },
+                singleLine = true
+            )
+            
+            errorMessage?.let {
+                Spacer(Modifier.height(4.dp))
+                Text(it, color = Color(0xFFFCA5A5), fontSize = 13.sp)
+            }
+
+            Spacer(Modifier.height(14.dp))
+            
+            SectionCard("सुरक्षा एवं डिवाइस ऐप लॉक (App Lock)", Icons.Default.Fingerprint) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("बायोमेट्रिक / स्क्रीन लॉक (App Lock)", fontWeight = FontWeight.Bold)
+                        Text("फिंगरप्रिंट या मोबाइल डिवाइस PIN से सत्यापन करें", fontSize = 12.sp, color = Grey)
+                    }
+                    Switch(
+                        checked = useAppLock,
+                        onCheckedChange = { useAppLock = it },
+                        colors = SwitchDefaults.colors(checkedTrackColor = Saffron)
+                    )
                 }
             }
-            if (state is AccountState.Error) Text((state as AccountState.Error).message, color = Color(0xFFFCA5A5))
-            if (state is AccountState.Message) Text((state as AccountState.Message).message, color = Green)
+
+            Spacer(Modifier.height(16.dp))
+
+            if (isAuthenticatingLock) {
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Saffron)
+                }
+            } else {
+                PrimaryButton("प्रवेश करें", Icons.Default.ArrowForward) {
+                    if (mobileNumber.length < 10) {
+                        errorMessage = "कृपया 10 अंकों का मान्य मोबाइल नंबर लिखें।"
+                    } else {
+                        errorMessage = null
+                        if (useAppLock) {
+                            isAuthenticatingLock = true
+                            viewModel.mobileLogin(mobileNumber) { success, err ->
+                                isAuthenticatingLock = false
+                                if (success) onAuthenticated() else errorMessage = err
+                            }
+                        } else {
+                            viewModel.mobileLogin(mobileNumber) { success, err ->
+                                if (success) onAuthenticated() else errorMessage = err
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
