@@ -417,21 +417,27 @@ fun Developer(viewModel: AuthViewModel, go: (Screen) -> Unit) {
 @Composable
 fun AppDetailsAdminPage(viewModel: AuthViewModel) {
     val appTitle by viewModel.adminAppTitle.collectAsState()
+    val mahanagars by viewModel.adminMahanagarList.collectAsState()
     val cities by viewModel.adminCityList.collectAsState()
+    val bastis by viewModel.adminBastiList.collectAsState()
+    val branches by viewModel.adminBranchList.collectAsState()
+    val mohallas by viewModel.adminMohallaList.collectAsState()
     val interests by viewModel.adminInterestList.collectAsState()
     val docsMap by viewModel.topicDocs.collectAsState()
 
     var editingTitle by remember { mutableStateOf(appTitle) }
-    var newCityItem by remember { mutableStateOf("") }
-    var newInterestItem by remember { mutableStateOf("") }
+    var newItemText by remember { mutableStateOf("") }
+    var selectedCategory by remember { mutableStateOf("महानगर") }
     var saveSuccessMsg by remember { mutableStateOf("") }
+
+    val categories = listOf("महानगर", "नगर", "बस्ती", "शाखा", "मोहल्ला", "रुचि")
 
     val topics = listOf("RSS प्रार्थना", "शाखा पद्धति", "गीत", "अमृत वचन", "शाखा खेल", "RSS इतिहास")
     var selectedTopicForPdf by remember { mutableStateOf(topics.first()) }
     var pdfUrlInput by remember { mutableStateOf(docsMap[topics.first()]?.first ?: "") }
     var imageUrlInput by remember { mutableStateOf(docsMap[topics.first()]?.second ?: "") }
 
-    // Native Local Device File Picker for PDF (Max 10 MB limit)
+    // Native Local Device File Picker for PDF
     val pdfPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
@@ -454,7 +460,7 @@ fun AppDetailsAdminPage(viewModel: AuthViewModel) {
     LazyColumn(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
             Text("सामग्री एवं ऐप विवरण प्रबंधन (Admin)", fontSize = 22.sp, fontWeight = FontWeight.Black)
-            Text("ऐप के शीर्षक, ड्रॉपडाउन विकल्पों और RSS पैनलों के लिए दस्तावेज़ (PDF/Image) सेट करें।", color = Grey)
+            Text("ऐप के शीर्षक, संगठन विकल्पों एवं RSS पैनलों के लिए दस्तावेज़ (PDF/Image) सेट करें।", color = Grey)
             Spacer(Modifier.height(8.dp))
 
             SectionCard("ऐप मुख्य विवरण", Icons.Default.Title) {
@@ -464,34 +470,63 @@ fun AppDetailsAdminPage(viewModel: AuthViewModel) {
                 )
             }
 
-            SectionCard("पंजीयन ड्रॉपडाउन विकल्प (संगठन एवं रुचि)", Icons.Default.ListAlt) {
-                Text("वर्तमान नगर सूची: ${cities.joinToString(", ")}", fontWeight = FontWeight.SemiBold)
+            SectionCard("पंजीयन ड्रॉपडाउन विकल्प प्रबंधन (संगठन एवं रुचि)", Icons.Default.ListAlt) {
+                Text("श्रेणी चुनें:", fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(6.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    OutlinedTextField(newCityItem, { newCityItem = it }, Modifier.weight(1f), label = { Text("नया नगर जोड़ें") })
-                    Spacer(Modifier.width(8.dp))
-                    Button(
-                        onClick = {
-                            if (newCityItem.isNotBlank()) {
-                                viewModel.adminCityList.value = (cities + newCityItem).toMutableList()
-                                newCityItem = ""
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Saffron)
-                    ) { Text("जोड़ें") }
+                categories.chunked(3).forEach { row ->
+                    Row(Modifier.fillMaxWidth()) {
+                        row.forEach { cat ->
+                            FilterChip(
+                                selected = selectedCategory == cat,
+                                onClick = { selectedCategory = cat },
+                                label = { Text(cat) },
+                                modifier = Modifier.weight(1f).padding(2.dp)
+                            )
+                        }
+                    }
                 }
 
-                Spacer(Modifier.height(12.dp))
-                Text("वर्तमान रुचि सूची: ${interests.joinToString(", ")}", fontWeight = FontWeight.SemiBold)
-                Spacer(Modifier.height(6.dp))
+                Spacer(Modifier.height(10.dp))
+                val currentCategoryList = when (selectedCategory) {
+                    "महानगर" -> mahanagars
+                    "नगर" -> cities
+                    "बस्ती" -> bastis
+                    "शाखा" -> branches
+                    "मोहल्ला" -> mohallas
+                    else -> interests
+                }
+
+                Text("वर्तमान $selectedCategory सूची:", fontWeight = FontWeight.Bold, color = Saffron)
+                Spacer(Modifier.height(4.dp))
+                Column {
+                    currentCategoryList.forEach { itemVal ->
+                        Row(
+                            Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("• $itemVal", fontWeight = FontWeight.SemiBold)
+                            IconButton(onClick = { viewModel.removeAdminOption(selectedCategory, itemVal) }) {
+                                Icon(Icons.Default.Delete, contentDescription = "हटाएँ", tint = Color.Red, modifier = Modifier.size(20.dp))
+                            }
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    OutlinedTextField(newInterestItem, { newInterestItem = it }, Modifier.weight(1f), label = { Text("नई रुचि जोड़ें") })
+                    OutlinedTextField(
+                        newItemText, { newItemText = it },
+                        Modifier.weight(1f),
+                        label = { Text("नया $selectedCategory जोड़ें") },
+                        singleLine = true
+                    )
                     Spacer(Modifier.width(8.dp))
                     Button(
                         onClick = {
-                            if (newInterestItem.isNotBlank()) {
-                                viewModel.adminInterestList.value = (interests + newInterestItem).toMutableList()
-                                newInterestItem = ""
+                            if (newItemText.isNotBlank()) {
+                                viewModel.addAdminOption(selectedCategory, newItemText)
+                                newItemText = ""
                             }
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = Saffron)

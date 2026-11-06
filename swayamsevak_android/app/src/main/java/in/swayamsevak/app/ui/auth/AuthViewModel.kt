@@ -28,6 +28,16 @@ class AuthViewModel @Inject constructor(private val repository: AuthRepository) 
     private val _activityState = MutableStateFlow<ActivityState>(ActivityState.Idle)
     val activityState = _activityState.asStateFlow()
 
+    // Dynamic Admin Configurable Hierarchy & Option Lists
+    var adminAppTitle = MutableStateFlow("स्वयंसेवक V2")
+    var adminMahanagarList = MutableStateFlow(mutableListOf("इंदौर", "भोपाल", "उज्जैन", "ग्वालियर", "जबलपुर"))
+    var adminCityList = MutableStateFlow(mutableListOf("पश्चिम नगर", "पूर्व नगर", "उत्तर नगर", "दक्षिण नगर"))
+    var adminBastiList = MutableStateFlow(mutableListOf("विजय नगर बस्ती", "मालवीय नगर बस्ती", "तिलक नगर बस्ती"))
+    var adminBranchList = MutableStateFlow(mutableListOf("विजय नगर शाखा", "मुख्य शाखा", "प्रभात शाखा"))
+    var adminMohallaList = MutableStateFlow(mutableListOf("विजय नगर", "स्कीम नंबर 54", "सुखलिया"))
+    var adminInterestList = MutableStateFlow(mutableListOf("शारीरिक", "गीत / संगीत", "बौद्धिक", "खेल", "योग", "सेवा कार्य", "संपर्क", "प्रचार", "तकनीकी / IT", "पर्यावरण"))
+
+    // Registration Form Inputs
     var phone = MutableStateFlow("")
     var email = MutableStateFlow("")
     var pin = MutableStateFlow("")
@@ -44,12 +54,6 @@ class AuthViewModel @Inject constructor(private val repository: AuthRepository) 
     var karyawah = MutableStateFlow("राकेश जोशी")
     val interests = mutableStateListOf<String>()
 
-    // Admin Configurable App Options
-    var adminAppTitle = MutableStateFlow("स्वयंसेवक V2")
-    var adminMahanagarList = MutableStateFlow(mutableListOf("इंदौर", "भोपाल", "उज्जैन", "ग्वालियर", "जबलपुर"))
-    var adminCityList = MutableStateFlow(mutableListOf("पश्चिम नगर", "पूर्व नगर", "उत्तर नगर", "दक्षिण नगर"))
-    var adminInterestList = MutableStateFlow(mutableListOf("शारीरिक", "बौद्धिक", "सेवा", "आईटी", "प्रचार", "पर्यावरण"))
-    // Map of topic title to Pair(pdfUrl, imageUrl)
     var topicDocs = MutableStateFlow(
         mutableMapOf(
             "RSS प्रार्थना" to Pair("https://example.com/prarthana.pdf", "https://example.com/prarthana.jpg"),
@@ -66,6 +70,30 @@ class AuthViewModel @Inject constructor(private val repository: AuthRepository) 
     var reportCityFilter = MutableStateFlow("पश्चिम नगर")
     var reportInterestFilter = MutableStateFlow("सभी")
     var reportRoleFilter = MutableStateFlow("सभी")
+
+    fun addAdminOption(type: String, item: String) {
+        val trimmed = item.trim()
+        if (trimmed.isBlank()) return
+        when (type) {
+            "महानगर" -> adminMahanagarList.value = (adminMahanagarList.value + trimmed).toMutableList()
+            "नगर" -> adminCityList.value = (adminCityList.value + trimmed).toMutableList()
+            "बस्ती" -> adminBastiList.value = (adminBastiList.value + trimmed).toMutableList()
+            "शाखा" -> adminBranchList.value = (adminBranchList.value + trimmed).toMutableList()
+            "मोहल्ला" -> adminMohallaList.value = (adminMohallaList.value + trimmed).toMutableList()
+            "रुचि" -> adminInterestList.value = (adminInterestList.value + trimmed).toMutableList()
+        }
+    }
+
+    fun removeAdminOption(type: String, item: String) {
+        when (type) {
+            "महानगर" -> adminMahanagarList.value = adminMahanagarList.value.filter { it != item }.toMutableList()
+            "नगर" -> adminCityList.value = adminCityList.value.filter { it != item }.toMutableList()
+            "बस्ती" -> adminBastiList.value = adminBastiList.value.filter { it != item }.toMutableList()
+            "शाखा" -> adminBranchList.value = adminBranchList.value.filter { it != item }.toMutableList()
+            "मोहल्ला" -> adminMohallaList.value = adminMohallaList.value.filter { it != item }.toMutableList()
+            "रुचि" -> adminInterestList.value = adminInterestList.value.filter { it != item }.toMutableList()
+        }
+    }
 
     fun getFilteredUsersForReport(): List<UserDetailDto> {
         val list = usersList.value

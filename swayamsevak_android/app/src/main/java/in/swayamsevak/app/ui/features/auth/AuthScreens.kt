@@ -132,12 +132,18 @@ fun Organization(viewModel: AuthViewModel, go: (Screen) -> Unit) {
     val branch by viewModel.branch.collectAsState()
     val mohalla by viewModel.mohalla.collectAsState()
 
+    val mahanagarList by viewModel.adminMahanagarList.collectAsState()
+    val cityList by viewModel.adminCityList.collectAsState()
+    val bastiList by viewModel.adminBastiList.collectAsState()
+    val branchList by viewModel.adminBranchList.collectAsState()
+    val mohallaList by viewModel.adminMohallaList.collectAsState()
+
     val options = listOf(
-        "महानगर" to listOf("इंदौर", "भोपाल", "उज्जैन"),
-        "नगर" to listOf("पश्चिम नगर", "पूर्व नगर", "उत्तर नगर"),
-        "बस्ती" to listOf("विजय नगर बस्ती", "मालवीय नगर बस्ती"),
-        "शाखा" to listOf("विजय नगर शाखा", "मुख्य शाखा"),
-        "मोहल्ला" to listOf("विजय नगर", "स्कीम नंबर 54", "सुखलिया")
+        "महानगर" to mahanagarList,
+        "नगर" to cityList,
+        "बस्ती" to bastiList,
+        "शाखा" to branchList,
+        "मोहल्ला" to mohallaList
     )
     val values = listOf(metro, city, basti, branch, mohalla)
     val setters = listOf<(String) -> Unit>(
@@ -176,7 +182,7 @@ fun Dropdown(label: String, value: String, items: List<String>, onValue: (String
 
 @Composable
 fun Interest(viewModel: AuthViewModel, go: (Screen) -> Unit) {
-    val options = listOf("शारीरिक", "गीत / संगीत", "बौद्धिक", "खेल", "योग", "सेवा कार्य", "संपर्क", "प्रचार", "तकनीकी / IT", "लेखन", "आयोजन व्यवस्था", "अन्य")
+    val options by viewModel.adminInterestList.collectAsState()
     val selected = viewModel.interests
 
     Column(Modifier.fillMaxSize().padding(18.dp)) {
