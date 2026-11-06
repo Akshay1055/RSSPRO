@@ -37,7 +37,7 @@ object Nagars : Table("nagars") {
     override val primaryKey = PrimaryKey(id)
 }
 
-// Table 3: Shakhas (बस्ती/शाखा - Nagar_Id, Basti_Name, Shakha_Name, Mohalla_Name, Mukhya_Shikshak, Karyawah)
+// Table 3: Shakhas (बस्ती/शाखा/मोहल्ला - Nagar_Id, Basti_Name, Shakha_Name, Mohalla_Name, Mukhya_Shikshak, Karyawah)
 object Shakhas : Table("shakhas") {
     val id = integer("id").autoIncrement()
     val nagarId = integer("nagar_id").references(Nagars.id)
@@ -46,18 +46,6 @@ object Shakhas : Table("shakhas") {
     val mohallaName = text("mohalla_name").default("")
     val mukhyaShikshak = text("mukhya_shikshak").default("राजेश वर्मा")
     val karyawah = text("karyawah").default("राकेश जोशी")
-    override val primaryKey = PrimaryKey(id)
-}
-
-// Legacy Organizations Table (preserved for backward compatibility)
-object Organizations : Table("organizations") {
-    val id = integer("id").autoIncrement()
-    val userId = uuid("user_id").references(Users.id)
-    val metro = text("metro").nullable()
-    val city = text("city").nullable()
-    val basti = text("basti").nullable()
-    val branch = text("branch").nullable()
-    val mohalla = text("mohalla").nullable()
     override val primaryKey = PrimaryKey(id)
 }
 
@@ -179,7 +167,7 @@ fun main() {
         )
         transaction {
             SchemaUtils.createMissingTablesAndColumns(
-                Mahanagars, Nagars, Shakhas, Users, Organizations, AdminUsers, ShakhaActivities
+                Mahanagars, Nagars, Shakhas, Users, AdminUsers, ShakhaActivities
             )
             seedAdminFromEnvironment()
         }
@@ -215,7 +203,7 @@ fun Application.module() {
         get("/api/users") {
             try {
                 val usersList = transaction {
-                    (Users leftJoin Organizations).selectAll().map {
+                    (Users leftJoin Shakhas leftJoin Nagars leftJoin Mahanagars).selectAll().map {
                         mapOf(
                             "id" to it[Users.id].toString(),
                             "phoneNumber" to it[Users.phoneNumber],
@@ -225,13 +213,13 @@ fun Application.module() {
                             "occupation" to (it[Users.occupation] ?: "व्यवसाय / छात्र"),
                             "role" to it[Users.role],
                             "organization" to mapOf(
-                                "metro" to (it[Organizations.metro] ?: ""),
-                                "city" to (it[Organizations.city] ?: ""),
-                                "basti" to (it[Organizations.basti] ?: ""),
-                                "branch" to (it[Organizations.branch] ?: ""),
-                                "mohalla" to (it[Organizations.mohalla] ?: ""),
-                                "mukhyaShikshak" to "राजेश वर्मा",
-                                "karyawah" to "राकेश जोशी"
+                                "metro" to (it.getOrNull(Mahanagars.name) ?: "इंदौर"),
+                                "city" to (it.getOrNull(Nagars.name) ?: "पश्चिम नगर"),
+                                "basti" to (it.getOrNull(Shakhas.bastiName) ?: "विजय नगर बस्ती"),
+                                "branch" to (it.getOrNull(Shakhas.shakhaName) ?: "विजय नगर शाखा"),
+                                "mohalla" to (it.getOrNull(Shakhas.mohallaName) ?: "विजय नगर"),
+                                "mukhyaShikshak" to (it.getOrNull(Shakhas.mukhyaShikshak) ?: "राजेश वर्मा"),
+                                "karyawah" to (it.getOrNull(Shakhas.karyawah) ?: "राकेश जोशी")
                             )
                         )
                     }
@@ -255,13 +243,6 @@ fun Application.module() {
                         it[dob] = req.dob
                         it[occupation] = req.occupation
                     }
-                    Organizations.update({ Organizations.userId eq userId }) {
-                        it[metro] = req.organization.metro
-                        it[city] = req.organization.city
-                        it[basti] = req.organization.basti
-                        it[branch] = req.organization.branch
-                        it[mohalla] = req.organization.mohalla
-                    }
                 }
                 call.respond(mapOf("status" to "SUCCESS"))
             } catch (e: Exception) {
@@ -274,10 +255,10 @@ fun Application.module() {
             if (query.length < 2) return@get call.respond(emptyList<MemberSummary>())
             val pattern = "%" + query + "%"
             val members = transaction {
-                (Users innerJoin Organizations).selectAll().where {
-                    (Users.fullName like pattern) or (Organizations.branch like pattern)
+                (Users leftJoin Shakhas).selectAll().where {
+                    (Users.fullName like pattern) or (Shakhas.shakhaName like pattern)
                 }.limit(50).map {
-                    MemberSummary(it[Users.id].toString(), it[Users.fullName], it[Organizations.branch] ?: "")
+                    MemberSummary(it[Users.id].toString(), it[Users.fullName], it.getOrNull(Shakhas.shakhaName) ?: "विजय नगर शाखा")
                 }
             }
             call.respond(members)
@@ -301,7 +282,7 @@ fun Application.module() {
         post("/shakha/activities") {
             val request = call.receive<CreateActivityRequest>()
             val creator = transaction {
-                (Users innerJoin Organizations).selectAll().where { Users.email eq request.email.trim().lowercase() }.singleOrNull()
+                Users.selectAll().where { Users.email eq request.email.trim().lowercase() }.singleOrNull()
             } ?: return@post call.respond(io.ktor.http.HttpStatusCode.Unauthorized, SimpleResponse(false, "Please sign in first"))
 
             if (request.title.isBlank() || request.details.isBlank()) {
@@ -311,7 +292,7 @@ fun Application.module() {
             transaction {
                 ShakhaActivities.insert {
                     it[ShakhaActivities.id] = id
-                    it[ShakhaActivities.shakha] = creator[Organizations.branch] ?: ""
+                    it[ShakhaActivities.shakha] = "विजय नगर शाखा"
                     it[ShakhaActivities.type] = request.type
                     it[ShakhaActivities.title] = request.title.trim()
                     it[ShakhaActivities.details] = request.details.trim()
@@ -347,14 +328,6 @@ fun Application.module() {
                             it[dob] = request.dob
                             it[occupation] = request.occupation
                         } get Users.id
-                        Organizations.insert {
-                            it[Organizations.userId] = userId
-                            it[metro] = request.organization.metro
-                            it[city] = request.organization.city
-                            it[basti] = request.organization.basti
-                            it[branch] = request.organization.branch
-                            it[mohalla] = request.organization.mohalla
-                        }
                         "SVY-" + userId.toString().take(6).uppercase()
                     }
                     call.respond(RegistrationResponse(registration, "SUCCESS"))
@@ -367,14 +340,14 @@ fun Application.module() {
                 val request = call.receive<ProfileLoginRequest>()
                 val cleanInput = request.email.trim().lowercase()
                 val profile = transaction {
-                    (Users leftJoin Organizations).selectAll()
+                    (Users leftJoin Shakhas).selectAll()
                         .where { (Users.email eq cleanInput) or (Users.phoneNumber eq cleanInput) }
                         .singleOrNull()
                 }
                 if (profile != null) {
                     call.respond(ProfileResponse(
                         profile[Users.id].toString(), profile[Users.fullName], profile[Users.phoneNumber],
-                        profile[Users.email] ?: "", profile[Organizations.branch] ?: "", profile[Users.role],
+                        profile[Users.email] ?: "", profile.getOrNull(Shakhas.shakhaName) ?: "विजय नगर शाखा", profile[Users.role],
                         profile[Users.occupation] ?: "व्यवसाय / छात्र"
                     ))
                 } else {
