@@ -156,13 +156,17 @@ fun main() {
 }
 
 private fun seedAdminFromEnvironment() {
-    val username = System.getenv("ADMIN_USERNAME")?.trim()
+    val rawUsernames = System.getenv("ADMIN_USERNAME")?.trim()
     val pin = System.getenv("ADMIN_PIN")
-    if (username.isNullOrBlank() || pin.isNullOrBlank()) return
-    if (AdminUsers.selectAll().where { AdminUsers.username eq username }.count() == 0L) {
-        AdminUsers.insert {
-            it[AdminUsers.username] = username
-            it[pinHash] = BCrypt.hashpw(pin, BCrypt.gensalt())
+    if (rawUsernames.isNullOrBlank() || pin.isNullOrBlank()) return
+
+    val usernames = rawUsernames.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+    for (user in usernames) {
+        if (AdminUsers.selectAll().where { AdminUsers.username eq user }.count() == 0L) {
+            AdminUsers.insert {
+                it[AdminUsers.username] = user
+                it[pinHash] = BCrypt.hashpw(pin, BCrypt.gensalt())
+            }
         }
     }
 }
