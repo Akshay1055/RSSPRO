@@ -221,28 +221,8 @@ class AuthViewModel @Inject constructor(private val repository: AuthRepository) 
         }
     }
 
-    fun profileLogin(loginEmail: String, loginPin: String) {
+    fun profileLogin(loginEmail: String, loginPin: String = "") {
         mobileLogin(loginEmail) { _, _ -> }
-    }
-
-    fun sendForgotPin(emailAddress: String) {
-        viewModelScope.launch {
-            _accountState.value = AccountState.Loading
-            repository.forgotPin(emailAddress).fold(
-                onSuccess = { _accountState.value = if (it.success) AccountState.Message(it.message) else AccountState.Error(it.message) },
-                onFailure = { _accountState.value = AccountState.Error("रीसेट ईमेल नहीं भेजा जा सका।") }
-            )
-        }
-    }
-
-    fun resetPin(emailAddress: String, code: String, newPin: String) {
-        viewModelScope.launch {
-            _accountState.value = AccountState.Loading
-            repository.resetPin(emailAddress, code, newPin).fold(
-                onSuccess = { _accountState.value = if (it.success) AccountState.Message("PIN बदल दिया गया है। अब प्रवेश करें।") else AccountState.Error(it.message) },
-                onFailure = { _accountState.value = AccountState.Error("रीसेट कोड अमान्य या समाप्त हो गया है।") }
-            )
-        }
     }
 
     fun createActivity(type: String, title: String, details: String) {
