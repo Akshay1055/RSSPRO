@@ -15,12 +15,6 @@ interface ApiService {
     @POST("auth/profile-login")
     suspend fun profileLogin(@Body request: ProfileLoginRequest): ProfileResponse
 
-    @POST("auth/forgot-pin")
-    suspend fun forgotPin(@Body request: ForgotPinRequest): SimpleResponse
-
-    @POST("auth/reset-pin")
-    suspend fun resetPin(@Body request: ResetPinRequest): SimpleResponse
-
     @GET("members")
     suspend fun searchMembers(@Query("query") query: String): List<MemberSummary>
 

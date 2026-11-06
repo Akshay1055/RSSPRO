@@ -20,18 +20,36 @@ import java.net.URL
 import java.security.SecureRandom
 import java.util.*
 
-object Users : Table("users") {
-    val id = uuid("id").clientDefault { UUID.randomUUID() }
-    val phoneNumber = text("phone_number").uniqueIndex()
-    val email = text("email").nullable().uniqueIndex()
-    val pinHash = text("pin_hash").nullable()
-    val fullName = text("full_name")
-    val fatherName = text("father_name").nullable()
-    val dob = text("dob").nullable()
-    val role = text("role").default("स्वयंसेवक")
+// Table 1: Mahanagars (महानगर - Name, Karyawah)
+object Mahanagars : Table("mahanagars") {
+    val id = integer("id").autoIncrement()
+    val name = text("name").uniqueIndex()
+    val karyawah = text("karyawah").default("राकेश जोशी")
     override val primaryKey = PrimaryKey(id)
 }
 
+// Table 2: Nagars (नगर - Mahanagar_Id, Name, Karyawah)
+object Nagars : Table("nagars") {
+    val id = integer("id").autoIncrement()
+    val mahanagarId = integer("mahanagar_id").references(Mahanagars.id)
+    val name = text("name")
+    val karyawah = text("karyawah").default("राकेश जोशी")
+    override val primaryKey = PrimaryKey(id)
+}
+
+// Table 3: Shakhas (बस्ती/शाखा - Nagar_Id, Basti_Name, Shakha_Name, Mohalla_Name, Mukhya_Shikshak, Karyawah)
+object Shakhas : Table("shakhas") {
+    val id = integer("id").autoIncrement()
+    val nagarId = integer("nagar_id").references(Nagars.id)
+    val bastiName = text("basti_name")
+    val shakhaName = text("shakha_name")
+    val mohallaName = text("mohalla_name").default("")
+    val mukhyaShikshak = text("mukhya_shikshak").default("राजेश वर्मा")
+    val karyawah = text("karyawah").default("राकेश जोशी")
+    override val primaryKey = PrimaryKey(id)
+}
+
+// Legacy Organizations Table (preserved for backward compatibility)
 object Organizations : Table("organizations") {
     val id = integer("id").autoIncrement()
     val userId = uuid("user_id").references(Users.id)
@@ -43,18 +61,26 @@ object Organizations : Table("organizations") {
     override val primaryKey = PrimaryKey(id)
 }
 
+// Table 4: Users (Registration Details + Shakha ForeignKey, Mobile-only Auth without PIN/Password)
+object Users : Table("users") {
+    val id = uuid("id").clientDefault { UUID.randomUUID() }
+    val phoneNumber = text("phone_number").uniqueIndex()
+    val email = text("email").nullable().uniqueIndex()
+    val fullName = text("full_name")
+    val fatherName = text("father_name").nullable()
+    val dob = text("dob").nullable()
+    val occupation = text("occupation").default("व्यवसाय / छात्र")
+    val role = text("role").default("स्वयंसेवक")
+    val shakhaId = integer("shakha_id").references(Shakhas.id).nullable()
+    val createdAt = long("created_at").clientDefault { System.currentTimeMillis() }
+    override val primaryKey = PrimaryKey(id)
+}
+
+// Table 5: Admin Users (Username & Hashed PIN for Admin Panel access)
 object AdminUsers : Table("admin_users") {
     val id = integer("id").autoIncrement()
     val username = text("username").uniqueIndex()
     val pinHash = text("pin_hash")
-    override val primaryKey = PrimaryKey(id)
-}
-
-object PasswordResetTokens : Table("password_reset_tokens") {
-    val id = uuid("id").clientDefault { UUID.randomUUID() }
-    val userId = uuid("user_id").references(Users.id)
-    val codeHash = text("code_hash")
-    val expiresAt = long("expires_at")
     override val primaryKey = PrimaryKey(id)
 }
 
@@ -73,16 +99,25 @@ object ShakhaActivities : Table("shakha_activities") {
 data class RegistrationRequest(
     val phoneNumber: String,
     val email: String,
-    val pin: String,
+    val pin: String = "0000",
     val fullName: String,
     val fatherName: String,
     val dob: String,
+    val occupation: String = "व्यवसाय / छात्र",
     val organization: OrganizationDto,
-    val interests: List<String>
+    val interests: List<String> = emptyList()
 )
 
 @Serializable
-data class OrganizationDto(val metro: String, val city: String, val basti: String, val branch: String, val mohalla: String)
+data class OrganizationDto(
+    val metro: String,
+    val city: String,
+    val basti: String,
+    val branch: String,
+    val mohalla: String,
+    val mukhyaShikshak: String = "राजेश वर्मा",
+    val karyawah: String = "राकेश जोशी"
+)
 
 @Serializable
 data class RegistrationResponse(val registrationId: String, val status: String)
@@ -91,7 +126,7 @@ data class RegistrationResponse(val registrationId: String, val status: String)
 data class MemberSummary(val id: String, val fullName: String, val shakha: String)
 
 @Serializable
-data class ProfileLoginRequest(val email: String, val pin: String)
+data class ProfileLoginRequest(val email: String, val pin: String = "")
 
 @Serializable
 data class ProfileResponse(
@@ -100,14 +135,11 @@ data class ProfileResponse(
     val phoneNumber: String,
     val email: String,
     val shakha: String,
-    val role: String
+    val role: String,
+    val occupation: String = "व्यवसाय / छात्र",
+    val mukhyaShikshak: String = "राजेश वर्मा",
+    val karyawah: String = "राकेश जोशी"
 )
-
-@Serializable
-data class ForgotPinRequest(val email: String)
-
-@Serializable
-data class ResetPinRequest(val email: String, val code: String, val newPin: String)
 
 @Serializable
 data class SimpleResponse(val success: Boolean, val message: String)
@@ -129,6 +161,7 @@ data class UpdateUserRequest(
     val fullName: String,
     val fatherName: String,
     val dob: String,
+    val occupation: String = "व्यवसाय / छात्र",
     val organization: OrganizationDto
 )
 
@@ -146,7 +179,7 @@ fun main() {
         )
         transaction {
             SchemaUtils.createMissingTablesAndColumns(
-                Users, Organizations, AdminUsers, PasswordResetTokens, ShakhaActivities
+                Mahanagars, Nagars, Shakhas, Users, Organizations, AdminUsers, ShakhaActivities
             )
             seedAdminFromEnvironment()
         }
@@ -171,23 +204,6 @@ private fun seedAdminFromEnvironment() {
     }
 }
 
-private fun sendResetCode(email: String, code: String): Boolean {
-    val apiKey = System.getenv("RESEND_API_KEY") ?: return false
-    val from = System.getenv("EMAIL_FROM") ?: return false
-    return try {
-        val connection = URL("https://api.resend.com/emails").openConnection() as HttpURLConnection
-        connection.requestMethod = "POST"
-        connection.setRequestProperty("Authorization", "Bearer " + apiKey)
-        connection.setRequestProperty("Content-Type", "application/json")
-        connection.doOutput = true
-        val body = "{\"from\":\"$from\",\"to\":[\"$email\"],\"subject\":\"RSSPRO PIN reset\",\"html\":\"<p>Your PIN reset code is <strong>$code</strong>.</p><p>This code expires in 15 minutes.</p>\"}"
-        connection.outputStream.bufferedWriter().use { it.write(body) }
-        connection.responseCode in 200..299
-    } catch (error: Exception) {
-        false
-    }
-}
-
 fun Application.module() {
     install(ContentNegotiation) { json(Json { prettyPrint = true; isLenient = true; ignoreUnknownKeys = true }) }
 
@@ -206,13 +222,16 @@ fun Application.module() {
                             "fullName" to it[Users.fullName],
                             "fatherName" to (it[Users.fatherName] ?: ""),
                             "dob" to (it[Users.dob] ?: ""),
+                            "occupation" to (it[Users.occupation] ?: "व्यवसाय / छात्र"),
                             "role" to it[Users.role],
                             "organization" to mapOf(
                                 "metro" to (it[Organizations.metro] ?: ""),
                                 "city" to (it[Organizations.city] ?: ""),
                                 "basti" to (it[Organizations.basti] ?: ""),
                                 "branch" to (it[Organizations.branch] ?: ""),
-                                "mohalla" to (it[Organizations.mohalla] ?: "")
+                                "mohalla" to (it[Organizations.mohalla] ?: ""),
+                                "mukhyaShikshak" to "राजेश वर्मा",
+                                "karyawah" to "राकेश जोशी"
                             )
                         )
                     }
@@ -228,18 +247,13 @@ fun Application.module() {
             val userId = try { UUID.fromString(idStr) } catch (e: Exception) { return@put call.respond(io.ktor.http.HttpStatusCode.BadRequest, "Invalid user id") }
             val req = call.receive<UpdateUserRequest>()
 
-            if (req.fullName.isBlank() || req.fatherName.isBlank() || req.dob.isBlank() ||
-                req.organization.metro.isBlank() || req.organization.city.isBlank() || req.organization.basti.isBlank() ||
-                req.organization.branch.isBlank() || req.organization.mohalla.isBlank()) {
-                return@put call.respond(io.ktor.http.HttpStatusCode.BadRequest, "सभी अनिवार्य क्षेत्र भरना आवश्यक है")
-            }
-
             try {
                 transaction {
                     Users.update({ Users.id eq userId }) {
                         it[fullName] = req.fullName
                         it[fatherName] = req.fatherName
                         it[dob] = req.dob
+                        it[occupation] = req.occupation
                     }
                     Organizations.update({ Organizations.userId eq userId }) {
                         it[metro] = req.organization.metro
@@ -323,18 +337,15 @@ fun Application.module() {
         route("/auth") {
             post("/register") {
                 val request = call.receive<RegistrationRequest>()
-                if (request.pin.length < 4 || !request.email.contains("@")) {
-                    return@post call.respond(io.ktor.http.HttpStatusCode.BadRequest, SimpleResponse(false, "Enter a valid email and PIN"))
-                }
                 try {
                     val registration = transaction {
                         val userId = Users.insert {
                             it[phoneNumber] = request.phoneNumber
                             it[email] = request.email.trim().lowercase()
-                            it[pinHash] = BCrypt.hashpw(request.pin, BCrypt.gensalt())
                             it[fullName] = request.fullName
                             it[fatherName] = request.fatherName
                             it[dob] = request.dob
+                            it[occupation] = request.occupation
                         } get Users.id
                         Organizations.insert {
                             it[Organizations.userId] = userId
@@ -354,65 +365,21 @@ fun Application.module() {
 
             post("/profile-login") {
                 val request = call.receive<ProfileLoginRequest>()
+                val cleanInput = request.email.trim().lowercase()
                 val profile = transaction {
-                    (Users innerJoin Organizations).selectAll()
-                        .where { Users.email eq request.email.trim().lowercase() }
+                    (Users leftJoin Organizations).selectAll()
+                        .where { (Users.email eq cleanInput) or (Users.phoneNumber eq cleanInput) }
                         .singleOrNull()
                 }
-                if (profile != null && !profile[Users.pinHash].isNullOrBlank() && BCrypt.checkpw(request.pin, profile[Users.pinHash]!!)) {
+                if (profile != null) {
                     call.respond(ProfileResponse(
                         profile[Users.id].toString(), profile[Users.fullName], profile[Users.phoneNumber],
-                        profile[Users.email] ?: "", profile[Organizations.branch] ?: "", profile[Users.role]
+                        profile[Users.email] ?: "", profile[Organizations.branch] ?: "", profile[Users.role],
+                        profile[Users.occupation] ?: "व्यवसाय / छात्र"
                     ))
                 } else {
-                    call.respond(io.ktor.http.HttpStatusCode.Unauthorized, SimpleResponse(false, "Invalid email or PIN"))
+                    call.respond(io.ktor.http.HttpStatusCode.Unauthorized, SimpleResponse(false, "Invalid phone or email"))
                 }
-            }
-
-            post("/forgot-pin") {
-                val request = call.receive<ForgotPinRequest>()
-                val user = transaction {
-                    Users.selectAll().where { Users.email eq request.email.trim().lowercase() }.singleOrNull()
-                }
-                if (user == null) {
-                    return@post call.respond(SimpleResponse(true, "If this email is registered, a reset code has been sent."))
-                }
-                val code = String.format("%06d", SecureRandom().nextInt(1_000_000))
-                transaction {
-                    PasswordResetTokens.deleteWhere { userId eq user[Users.id] }
-                    PasswordResetTokens.insert {
-                        it[userId] = user[Users.id]
-                        it[codeHash] = BCrypt.hashpw(code, BCrypt.gensalt())
-                        it[expiresAt] = now() + 15 * 60 * 1000
-                    }
-                }
-                if (sendResetCode(request.email.trim().lowercase(), code)) {
-                    call.respond(SimpleResponse(true, "A reset code has been sent to your email."))
-                } else {
-                    call.respond(io.ktor.http.HttpStatusCode.ServiceUnavailable, SimpleResponse(false, "Email delivery is not configured yet."))
-                }
-            }
-
-            post("/reset-pin") {
-                val request = call.receive<ResetPinRequest>()
-                if (request.newPin.length < 4) {
-                    return@post call.respond(io.ktor.http.HttpStatusCode.BadRequest, SimpleResponse(false, "PIN must have at least 4 characters"))
-                }
-                val user = transaction {
-                    Users.selectAll().where { Users.email eq request.email.trim().lowercase() }.singleOrNull()
-                } ?: return@post call.respond(io.ktor.http.HttpStatusCode.BadRequest, SimpleResponse(false, "Invalid reset request"))
-                val token = transaction {
-                    PasswordResetTokens.selectAll().where { PasswordResetTokens.userId eq user[Users.id] }
-                        .orderBy(PasswordResetTokens.expiresAt, SortOrder.DESC).limit(1).singleOrNull()
-                }
-                if (token == null || token[PasswordResetTokens.expiresAt] < now() || !BCrypt.checkpw(request.code, token[PasswordResetTokens.codeHash])) {
-                    return@post call.respond(io.ktor.http.HttpStatusCode.BadRequest, SimpleResponse(false, "Invalid or expired reset code"))
-                }
-                transaction {
-                    Users.update({ Users.id eq user[Users.id] }) { it[pinHash] = BCrypt.hashpw(request.newPin, BCrypt.gensalt()) }
-                    PasswordResetTokens.deleteWhere { userId eq user[Users.id] }
-                }
-                call.respond(SimpleResponse(true, "PIN updated successfully"))
             }
         }
     }
