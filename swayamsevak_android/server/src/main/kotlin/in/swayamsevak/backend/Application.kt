@@ -60,7 +60,7 @@ object Users : Table("users") {
     val occupation = text("occupation").default("व्यवसाय / छात्र")
     val role = text("role").default("स्वयंसेवक")
     val shakhaId = integer("shakha_id").references(Shakhas.id).nullable()
-    val createdAt = long("created_at").clientDefault { System.currentTimeMillis() }
+    val createdAt = long("created_at").default(System.currentTimeMillis())
     override val primaryKey = PrimaryKey(id)
 }
 
